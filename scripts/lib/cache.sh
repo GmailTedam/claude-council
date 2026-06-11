@@ -110,14 +110,14 @@ cache_stats() {
 
     for cache_file in "${COUNCIL_CACHE_DIR}"/*.json; do
         [[ -f "$cache_file" ]] || continue
-        ((total++))
+        total=$((total + 1))
         local timestamp
         timestamp=$(jq -r '.timestamp // 0' "$cache_file" 2>/dev/null)
         local age=$((now - timestamp))
         if [[ $age -lt $COUNCIL_CACHE_TTL ]]; then
-            ((valid++))
+            valid=$((valid + 1))
         else
-            ((expired++))
+            expired=$((expired + 1))
         fi
     done
 
