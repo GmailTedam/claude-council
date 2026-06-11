@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "claude-council",
-      "source": ".",
+      "source": "./",
       "category": "development",
       "description": "Consult multiple AI coding agents (Gemini, OpenAI, Grok, Perplexity, plus codex and gemini CLIs when installed) to get diverse perspectives on coding problems"
     }

@@ -14,6 +14,9 @@ BLUE='\033[34m'
 WHITE='\033[37m'
 RED='\033[31m'
 GREEN='\033[32m'
+YELLOW='\033[33m'
+MAGENTA='\033[35m'
+CYAN='\033[36m'
 DIM='\033[2m'
 RESET='\033[0m'
 
@@ -50,6 +53,20 @@ check_provider() {
             http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
                 -H "Authorization: Bearer ${api_key}" \
                 "https://api.x.ai/v1/models" 2>/dev/null || echo "000")
+            ;;
+        anthropic)
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
+                -X POST \
+                -H "x-api-key: ${api_key}" \
+                -H "anthropic-version: 2023-06-01" \
+                -H "Content-Type: application/json" \
+                -d '{"model":"'${model}'","messages":[{"role":"user","content":"hi"}],"max_tokens":1}' \
+                "https://api.anthropic.com/v1/messages" 2>/dev/null || echo "000")
+            ;;
+        deepseek)
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
+                -H "Authorization: Bearer ${api_key}" \
+                "https://api.deepseek.com/models" 2>/dev/null || echo "000")
             ;;
         perplexity)
             # Perplexity has no /models endpoint; use minimal chat request
@@ -107,6 +124,8 @@ echo -e "${DIM}Provider Status:${RESET}"
 echo ""
 
 # Check each provider
+anthropic_status=$(check_provider "anthropic" "ANTHROPIC_API_KEY" "ANTHROPIC_MODEL" "claude-3-7-sonnet-20250219")
+deepseek_status=$(check_provider "deepseek" "DEEPSEEK_API_KEY" "DEEPSEEK_MODEL" "deepseek-chat")
 gemini_status=$(check_provider "gemini" "GEMINI_API_KEY" "GEMINI_MODEL" "gemini-3.1-pro-preview")
 openai_status=$(check_provider "openai" "OPENAI_API_KEY" "OPENAI_MODEL" "gpt-5.5-pro")
 grok_status=$(check_provider "grok" "GROK_API_KEY" "GROK_MODEL" "grok-4.20-reasoning")
@@ -159,6 +178,8 @@ format_status() {
     echo -e "  ${emoji} ${color}${name}${RESET}\t${status_icon} ${status_text}  ${model_text}"
 }
 
+format_status "$(provider_emoji anthropic)"  "$(provider_color anthropic)"  "Anthropic"  "$anthropic_status"
+format_status "$(provider_emoji deepseek)"   "$(provider_color deepseek)"   "DeepSeek"   "$deepseek_status"
 format_status "$(provider_emoji gemini)"     "$(provider_color gemini)"     "Gemini"     "$gemini_status"
 format_status "$(provider_emoji openai)"     "$(provider_color openai)"     "OpenAI"     "$openai_status"
 format_status "$(provider_emoji grok)"       "$(provider_color grok)"       "Grok"       "$grok_status"
@@ -170,6 +191,8 @@ echo ""
 
 # Summary
 available=0
+[[ "$anthropic_status" == ok:* ]] && available=$((available + 1))
+[[ "$deepseek_status" == ok:* ]] && available=$((available + 1))
 [[ "$gemini_status" == ok:* ]] && available=$((available + 1))
 [[ "$openai_status" == ok:* ]] && available=$((available + 1))
 [[ "$grok_status" == ok:* ]] && available=$((available + 1))
@@ -177,5 +200,5 @@ available=0
 [[ "$codex_status" == ok:* ]] && available=$((available + 1))
 [[ "$gemini_cli_status" == ok:* ]] && available=$((available + 1))
 
-echo -e "${DIM}${available}/6 providers available${RESET}"
+echo -e "${DIM}${available}/8 providers available${RESET}"
 echo ""

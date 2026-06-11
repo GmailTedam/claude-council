@@ -21,6 +21,8 @@ discover_providers() {
             gemini-cli)
                 command -v gemini >/dev/null 2>&1 && is_available=true
                 ;;
+            anthropic)  [[ -n "${ANTHROPIC_API_KEY:-}" ]] && is_available=true ;;
+            deepseek)   [[ -n "${DEEPSEEK_API_KEY:-}" ]] && is_available=true ;;
             gemini)     [[ -n "${GEMINI_API_KEY:-}" ]] && is_available=true ;;
             openai)     [[ -n "${OPENAI_API_KEY:-}" ]] && is_available=true ;;
             grok)       [[ -n "${GROK_API_KEY:-}" ]] && is_available=true ;;
@@ -85,6 +87,8 @@ default_provider_set() {
 # actually run. Bump when the CLI ships a new default we want to track.
 get_model() {
     case "$1" in
+        anthropic)  echo "${ANTHROPIC_MODEL:-claude-3-7-sonnet-20250219}" ;;
+        deepseek)   echo "${DEEPSEEK_MODEL:-deepseek-chat}" ;;
         gemini)     echo "${GEMINI_MODEL:-gemini-3.1-pro-preview}" ;;
         openai)     echo "${OPENAI_MODEL:-gpt-5.5-pro}" ;;
         grok)       echo "${GROK_MODEL:-grok-4.20-reasoning}" ;;
@@ -100,6 +104,8 @@ get_model() {
 # Caller is responsible for defining BLUE/WHITE/RED/GREEN/CYAN globals.
 provider_color() {
     case "$1" in
+        anthropic)         echo -e "${MAGENTA}" ;;
+        deepseek)          echo -e "${YELLOW}" ;;
         gemini|gemini-cli) echo -e "${BLUE}" ;;
         openai|codex)      echo -e "${WHITE}" ;;
         grok)              echo -e "${RED}" ;;
@@ -111,6 +117,8 @@ provider_color() {
 # Vendor emoji for a provider name. Same grouping as provider_color.
 provider_emoji() {
     case "$1" in
+        anthropic)         echo "🟪" ;;
+        deepseek)          echo "🟨" ;;
         gemini|gemini-cli) echo "🟦" ;;
         openai|codex)      echo "🔳" ;;
         grok)              echo "🟥" ;;

@@ -12,7 +12,7 @@ A Claude Code plugin that consults multiple AI coding agents in parallel and sho
 /plugin install claude-council
 
 # 2. Configure at least one provider — any of these works:
-export OPENAI_API_KEY="..."         # or GEMINI_API_KEY, XAI_API_KEY, PERPLEXITY_API_KEY
+export OPENAI_API_KEY="..."         # or GEMINI_API_KEY, ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, XAI_API_KEY, PERPLEXITY_API_KEY
                                     # OR install the codex / gemini CLIs (uses your existing
                                     # subscription — no API key needed)
 
@@ -48,7 +48,7 @@ Inside tmux, results stream into a side pane in real time with vendor-colored ba
 
 ## Features
 
-- Query Gemini, OpenAI (GPT/Codex), Grok, and Perplexity simultaneously
+- Query Gemini, OpenAI (GPT/Codex), Grok, Perplexity, Anthropic, and DeepSeek simultaneously
 - Use the `codex` and `gemini` CLIs (subscription auth) when installed — preferred over their API siblings
 - Side-by-side comparison of responses with vendor-colored headers
 - Streaming tmux pane that renders responses as they land
@@ -312,6 +312,8 @@ export GEMINI_API_KEY="your-key"
 export OPENAI_API_KEY="your-key"
 export XAI_API_KEY="your-key"          # GROK_API_KEY also accepted
 export PERPLEXITY_API_KEY="your-key"
+export ANTHROPIC_API_KEY="your-key"
+export DEEPSEEK_API_KEY="your-key"
 ```
 
 Or create `.claude/claude-council.local.md` in your project:
@@ -326,6 +328,10 @@ providers:
   grok:
     api_key: "your-key"
   perplexity:
+    api_key: "your-key"
+  anthropic:
+    api_key: "your-key"
+  deepseek:
     api_key: "your-key"
 ---
 ```
@@ -377,6 +383,8 @@ export GEMINI_MODEL="gemini-3.1-pro-preview"       # default
 export OPENAI_MODEL="gpt-5.5-pro"                   # default
 export GROK_MODEL="grok-4.20-reasoning"             # default
 export PERPLEXITY_MODEL="sonar-reasoning-pro"       # default (reasoning + search)
+export ANTHROPIC_MODEL="claude-3-7-sonnet-20250219" # default
+export DEEPSEEK_MODEL="deepseek-chat"               # default
 ```
 
 Response length cap (default: 2048):

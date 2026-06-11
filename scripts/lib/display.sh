@@ -276,6 +276,8 @@ SPINNERS=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
 provider_color_rgb() {
     local __out="$1"
     case "$2" in
+        anthropic)         printf -v "$__out" '168;85;247'   ;;  # Purple-500
+        deepseek)          printf -v "$__out" '234;179;8'    ;;  # Yellow-500
         gemini|gemini-cli) printf -v "$__out" '59;130;246'   ;;
         openai|codex)      printf -v "$__out" '229;231;235'  ;;
         grok)              printf -v "$__out" '248;113;113'  ;;
