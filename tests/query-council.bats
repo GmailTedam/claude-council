@@ -12,6 +12,7 @@ setup() {
     # Unset all provider keys to test error cases. XAI_API_KEY also has to go,
     # since keys.sh's resolve_grok_key copies it to GROK_API_KEY automatically.
     unset GEMINI_API_KEY OPENAI_API_KEY GROK_API_KEY XAI_API_KEY PERPLEXITY_API_KEY
+    unset ANTHROPIC_API_KEY DEEPSEEK_API_KEY
     # Hide codex/gemini binaries so binary-gated discovery doesn't make real CLI
     # calls during arg-parsing tests. The cli-providers.bats file does the
     # opposite — it keeps them on PATH on purpose.
