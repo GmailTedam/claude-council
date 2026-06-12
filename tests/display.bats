@@ -64,6 +64,14 @@ teardown() {
 @test "display: it2_set_tab_color emits escape when in iTerm2" {
     source "$LIB"
     export LC_TERMINAL="iTerm2"
+    # Stub it2setcolor so the test runs on hosts without iTerm2's utilities
+    # (the real tool emits the escape itself; the contract under test is the
+    # iTerm2 gating plus the tool invocation, not the binary).
+    mkdir -p "$BATS_TEST_TMPDIR/bin"
+    printf '#!/usr/bin/env bash\nprintf "\\033]6;1;bg;red;brightness;255\\a"\n' \
+        > "$BATS_TEST_TMPDIR/bin/it2setcolor"
+    chmod +x "$BATS_TEST_TMPDIR/bin/it2setcolor"
+    export PATH="$BATS_TEST_TMPDIR/bin:$PATH"
     # Capture raw bytes (run's $output strips control chars in some bats versions)
     local out
     out=$(it2_set_tab_color yellow 2>&1 | od -c | head -2)
