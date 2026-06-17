@@ -14,8 +14,8 @@ A Claude Code plugin that consults multiple AI coding agents in parallel and sho
 # 2. Configure at least one provider — any of these works:
 export OPENAI_API_KEY="..."         # or GEMINI_API_KEY, ANTHROPIC_API_KEY, DEEPSEEK_API_KEY,
                                     # XAI_API_KEY, PERPLEXITY_API_KEY, NVIDIA_API_KEY
-                                    # OR install the codex / gemini CLIs (uses your existing
-                                    # subscription — no API key needed)
+                                    # OR install the codex / gemini / ollama CLIs (uses your existing
+                                    # subscription/local runtime; no hosted API key needed)
 
 # 3. Ask anything
 /claude-council:ask "Should I use UUID or BIGINT primary keys for a SaaS users table?"
@@ -49,8 +49,8 @@ Inside tmux, results stream into a side pane in real time with vendor-colored ba
 
 ## Features
 
-- Query Gemini, OpenAI (GPT/Codex), Grok, Perplexity, Anthropic, DeepSeek, and NVIDIA NIM simultaneously
-- Use the `codex` and `gemini` CLIs (subscription auth) when installed — preferred over their API siblings
+- Query Gemini, OpenAI (GPT/Codex), Grok, Perplexity, Anthropic, DeepSeek, NVIDIA NIM, and local Ollama models simultaneously
+- Use the `codex`, `gemini`, and `ollama` CLIs when installed; Codex/Gemini CLIs are preferred over their API siblings
 - Side-by-side comparison of responses with vendor-colored headers
 - Streaming tmux pane that renders responses as they land
 - Specialized roles, debate mode, and agent-enhanced deep analysis for high-stakes decisions
@@ -111,7 +111,7 @@ claude --plugin-dir /path/to/claude-council
 
 | Flag | Description |
 |------|-------------|
-| `--providers=list` | Query specific providers (e.g., `gemini,openai,codex`) |
+| `--providers=list` | Query specific providers (e.g., `gemini,openai,codex,ollama`) |
 | `--roles=list` | Assign roles (e.g., `security,performance` or preset like `balanced`) |
 | `--debate` | Enable two-round debate mode |
 | `--file=path` | Include specific file in context |
@@ -340,20 +340,28 @@ providers:
 ---
 ```
 
-### CLI Providers (subscription auth, no API key)
+### CLI and Local Providers
 
 If `codex` or `gemini` CLIs are installed and on `PATH`, they're discovered automatically and **preferred over their API siblings** by default:
 
 - `codex` (OpenAI Codex CLI) shadows the `openai` API provider
 - `gemini` (Google Gemini CLI) shadows the `gemini` API provider
 
-CLI providers use your existing CLI subscription — no API key, no per-call cost. To opt back into the API variant for a single call, pass it explicitly: `--providers=openai` or `--providers=gemini`. Listing both API and CLI together (e.g., `--providers=gemini,gemini-cli`) runs them side-by-side for comparison.
+CLI providers use your existing CLI subscription: no API key, no per-call cost. To opt back into the API variant for a single call, pass it explicitly: `--providers=openai` or `--providers=gemini`. Listing both API and CLI together (e.g., `--providers=gemini,gemini-cli`) runs them side-by-side for comparison.
+
+If `ollama` is installed or `OLLAMA_BASE_URL` is set, the local `ollama`
+provider is discovered as a separate council member. It does not shadow a
+hosted provider. In WSL, the provider also probes the Windows host gateway and
+`host.docker.internal` because Windows Ollama is not always exposed on WSL's
+`127.0.0.1`.
 
 Override CLI model selection (defaults mirror what each CLI picks itself):
 
 ```bash
 export CODEX_MODEL="gpt-5-codex"                # default: gpt-5.5
 export GEMINI_CLI_MODEL="gemini-3-pro"          # default: gemini-3-flash-preview
+export OLLAMA_MODEL="qwen2.5-coder:7b"          # default
+export OLLAMA_BASE_URL="http://127.0.0.1:11434" # optional remote/local endpoint
 ```
 
 ### Verbosity
@@ -388,9 +396,21 @@ export OPENAI_MODEL="gpt-5.5-pro"                   # default
 export GROK_MODEL="grok-4.20-reasoning"             # default
 export PERPLEXITY_MODEL="sonar-reasoning-pro"       # default (reasoning + search)
 export NVIDIA_MODEL="nvidia/llama-3.3-nemotron-super-49b-v1.5" # default
+export OLLAMA_MODEL="qwen2.5-coder:7b"           # default local model
 export ANTHROPIC_MODEL="claude-3-7-sonnet-20250219" # default
 export DEEPSEEK_MODEL="deepseek-chat"               # default
 ```
+
+Good local Ollama/AirLLM-backed council models:
+
+- `qwen2.5-coder:7b`: default coding reviewer.
+- `devstral-small-2:24b`: slower, stronger coding and agentic review.
+- `mistral-small3.2:24b` or `gpt-oss:20b`: general architecture tradeoffs.
+- `llama3.2:1b`: smoke tests and fast sanity checks.
+
+Do not use embedding, OCR, vision, safety-classifier, or healthcare-specialized
+models as general council defaults. They are task-specific, not broad software
+engineering reviewers.
 
 For a private or local NVIDIA NIM endpoint, set `NVIDIA_BASE_URL` to the API
 base URL, for example `https://integrate.api.nvidia.com/v1` or an internal

@@ -39,13 +39,13 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Helper: compute a PATH that excludes the directories holding codex and gemini.
+# Helper: compute a PATH that excludes the directories holding local providers.
 # Use when a test needs to assert "no providers available" on a developer machine
-# that has the CLI agents installed.
+# that has CLI/local agents installed.
 path_without_clis() {
     local clean=$PATH
     local cli dir
-    for cli in codex gemini; do
+    for cli in codex gemini ollama ollama.exe; do
         dir=$(dirname "$(command -v "$cli" 2>/dev/null)" 2>/dev/null || true)
         [[ -n "$dir" ]] || continue
         clean=$(echo "$clean" | tr ':' '\n' | grep -vF -- "$dir" | tr '\n' ':')

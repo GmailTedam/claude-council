@@ -4,6 +4,20 @@ All notable changes to claude-council are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to a `YYYY.M.BUILD` versioning scheme where `BUILD` resets each month.
 
+## Unreleased
+
+### Features
+
+- **Ollama local provider.** Added `scripts/providers/ollama.sh`, discovery via
+  `ollama` on `PATH` or `OLLAMA_BASE_URL`, `OLLAMA_MODEL` defaulting to
+  `qwen2.5-coder:7b`, status output, display colors, and tests.
+
+### Docs
+
+- Documented suitable local Ollama/AirLLM-backed council models and kept
+  embedding, OCR, vision, safety-classifier, and healthcare-specific pulls out
+  of the default council set.
+
 ## 2026.6.1
 
 ### Fixes

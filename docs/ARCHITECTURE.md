@@ -124,7 +124,7 @@ OUTPUT: stdout = AI response text
 EXIT:   0 = success, non-zero = failure (error to stderr)
 ```
 
-Two flavors share the interface:
+Three flavors share the interface:
 
 - **API providers** (`gemini`, `openai`, `grok`, `perplexity`) — gated on
   `{PROVIDER}_API_KEY`, talk to vendor APIs over HTTPS, charge per call.
@@ -133,12 +133,14 @@ Two flavors share the interface:
   When both an API and CLI sibling exist (codex+openai, gemini-cli+gemini),
   the orchestrator prefers the CLI by default; explicit `--providers` wins
   over the policy.
+- **Local providers** (`ollama`) - gated on the `ollama` binary or
+  `OLLAMA_BASE_URL`, talk to a local or remote Ollama-compatible endpoint.
 
 Environment-based configuration:
 - `{PROVIDER}_API_KEY` - Required authentication for API providers
-- `{PROVIDER}_MODEL` - Model override (also applies to CLI providers via
-  `CODEX_MODEL` / `GEMINI_CLI_MODEL`)
-- `COUNCIL_MAX_TOKENS` - Response length limit (API providers only)
+- `{PROVIDER}_MODEL` - Model override (also applies to CLI/local providers via
+  `CODEX_MODEL`, `GEMINI_CLI_MODEL`, and `OLLAMA_MODEL`)
+- `COUNCIL_MAX_TOKENS` - Response length limit for API providers and Ollama
 - `COUNCIL_DEBUG` - Enable verbose logging
 
 ### Cache Layer (`scripts/lib/cache.sh`)
@@ -186,7 +188,7 @@ User -> parse args -> discover providers -> check cache
                     |           |
                [HIT]         [MISS]
                  |              |
-                 |         query API -> store cache
+                 |         query provider -> store cache
                  |              |
                  +------+-------+
                         |
@@ -221,7 +223,7 @@ User -> ask.md detects --agents flag (or NL trigger)
  Gemini   OpenAI   Grok     Perplexity
     |        |        |        |
     | Each agent independently:
-    | 1. Runs provider curl script
+    | 1. Runs provider script
     | 2. Evaluates response quality
     | 3. Retries with reformulated prompt if poor
     | 4. Asks follow-up questions for depth
@@ -275,7 +277,8 @@ claude-council/
 │   │   ├── grok.sh              # API
 │   │   ├── perplexity.sh        # API
 │   │   ├── codex.sh             # CLI (subscription auth, shadows openai)
-│   │   └── gemini-cli.sh        # CLI (subscription auth, shadows gemini)
+│   │   ├── gemini-cli.sh        # CLI (subscription auth, shadows gemini)
+│   │   └── ollama.sh            # Local/remote Ollama HTTP provider
 │   └── lib/
 │       ├── cache.sh             # Caching utilities
 │       ├── display.sh           # Streaming tmux pane + iTerm2 lifecycle
@@ -299,7 +302,7 @@ claude-council/
 │   ├── run_tests.sh             # Test runner
 │   ├── test_helper.bash         # Shared test utilities
 │   ├── cache.bats
-│   ├── cli-providers.bats       # CLI providers (codex, gemini-cli)
+│   ├── cli-providers.bats       # CLI/local providers (codex, gemini-cli, ollama)
 │   ├── display.bats
 │   ├── keys.bats
 │   ├── roles.bats
@@ -323,6 +326,8 @@ claude-council/
 | `{PROVIDER}_MODEL` | varies | Model override (API providers) |
 | `CODEX_MODEL` | gpt-5.5 | Model passed to `codex exec -m` |
 | `GEMINI_CLI_MODEL` | gemini-3-flash-preview | Model passed to `gemini -m` |
+| `OLLAMA_MODEL` | qwen2.5-coder:7b | Model passed to Ollama `/api/chat` |
+| `OLLAMA_BASE_URL` | http://127.0.0.1:11434 | Ollama-compatible endpoint |
 | `COUNCIL_MAX_TOKENS` | 2048 | Max response tokens |
 | `COUNCIL_MAX_RETRIES` | 3 | Retry attempts |
 | `COUNCIL_RETRY_DELAY` | 1 | Initial retry delay (s) |

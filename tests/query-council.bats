@@ -13,10 +13,12 @@ setup() {
     # since keys.sh's resolve_grok_key copies it to GROK_API_KEY automatically.
     unset GEMINI_API_KEY OPENAI_API_KEY GROK_API_KEY XAI_API_KEY PERPLEXITY_API_KEY
     unset ANTHROPIC_API_KEY DEEPSEEK_API_KEY NVIDIA_API_KEY NVIDIA_BUILD_API_KEY
-    # Hide codex/gemini binaries so binary-gated discovery doesn't make real CLI
-    # calls during arg-parsing tests. The cli-providers.bats file does the
-    # opposite — it keeps them on PATH on purpose.
-    export PATH=$(path_without_clis)
+    unset OLLAMA_BASE_URL
+    export COUNCIL_DISABLE_OLLAMA_HTTP_DISCOVERY=1
+    # Disable binary-backed discovery so arg-parsing tests do not make real
+    # local calls. Keep PATH intact because required tools can share directories
+    # with local provider CLIs on developer machines.
+    export COUNCIL_DISABLE_CLI_DISCOVERY=1
 }
 
 teardown() {

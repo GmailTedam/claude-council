@@ -282,6 +282,7 @@ provider_color_rgb() {
         openai|codex)      printf -v "$__out" '229;231;235'  ;;
         grok)              printf -v "$__out" '248;113;113'  ;;
         nvidia)            printf -v "$__out" '118;185;0'     ;;
+        ollama)            printf -v "$__out" '34;211;238'   ;;
         perplexity)        printf -v "$__out" '74;222;128'   ;;
         *)                 printf -v "$__out" '156;163;175'  ;;
     esac
@@ -335,6 +336,7 @@ build_banner_line() {
         openai|codex)      bg='229;231;235'; fg='31;41;55';    accent='100;116;139' ;;  # gray-200/slate-500
         grok)              bg='185;28;28';   fg='255;255;255'; accent='252;165;165' ;;  # red-700/300
         nvidia)            bg='63;98;18';    fg='255;255;255'; accent='190;242;100' ;;  # lime-800/300
+        ollama)            bg='14;116;144';   fg='255;255;255'; accent='165;243;252' ;;  # cyan-700/200
         perplexity)        bg='21;128;61';   fg='255;255;255'; accent='134;239;172' ;;  # green-700/300
         *)                 bg='55;65;81';    fg='255;255;255'; accent='156;163;175' ;;  # gray-700/400
     esac

@@ -28,7 +28,7 @@ usage() {
 Usage: query-council.sh [OPTIONS] [--] <prompt>
 
 Options:
-  --providers LIST    Comma-separated providers (gemini,openai,grok,perplexity,nvidia)
+  --providers LIST    Comma-separated providers (gemini,openai,grok,perplexity,nvidia,ollama)
   --roles LIST        Assign roles to providers (security,performance,maintainability)
                       Or use preset: balanced, security-focused, architecture, review
   --verbosity LEVEL   Response verbosity: brief, standard (default), detailed
@@ -181,7 +181,7 @@ if [[ "$LIST_AVAILABLE" == true ]]; then
     if [[ ${#DISCOVERED[@]} -eq 0 ]]; then
         echo "No providers configured."
         echo "  Set an API key (ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, XAI_API_KEY/GROK_API_KEY, PERPLEXITY_API_KEY, or NVIDIA_API_KEY/NVIDIA_BUILD_API_KEY)"
-        echo "  or install a CLI agent (codex, gemini)."
+        echo "  or install/configure a local CLI agent (codex, gemini, ollama)."
         exit 0
     fi
     read -ra DEFAULT_SET <<< "$(prefer_cli_over_api "${DISCOVERED[@]+"${DISCOVERED[@]}"}")"
@@ -258,7 +258,7 @@ fi
 if [[ ${#PROVIDERS[@]} -eq 0 ]]; then
     echo "Error: No providers configured." >&2
     echo "  Set an API key (ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, XAI_API_KEY/GROK_API_KEY, PERPLEXITY_API_KEY, or NVIDIA_API_KEY/NVIDIA_BUILD_API_KEY)" >&2
-    echo "  or install a CLI agent (codex, gemini)." >&2
+    echo "  or install/configure a local CLI agent (codex, gemini, ollama)." >&2
     exit 1
 fi
 

@@ -23,10 +23,13 @@ Each provider is a shell script in `scripts/providers/` that:
 
 | Provider | API Key Variable | Default Model |
 |----------|------------------|---------------|
+| Anthropic | `ANTHROPIC_API_KEY` | claude-3-7-sonnet-20250219 |
+| DeepSeek | `DEEPSEEK_API_KEY` | deepseek-chat |
 | Gemini | `GEMINI_API_KEY` | gemini-3.1-pro-preview |
 | OpenAI | `OPENAI_API_KEY` | gpt-5.5-pro |
 | Grok | `XAI_API_KEY` (or `GROK_API_KEY`) | grok-4.20-reasoning |
 | NVIDIA NIM | `NVIDIA_API_KEY` (or `NVIDIA_BUILD_API_KEY`) | nvidia/llama-3.3-nemotron-super-49b-v1.5 |
+| Ollama | none for local; optional `OLLAMA_API_KEY` for authenticated endpoints | qwen2.5-coder:7b |
 | Perplexity | `PERPLEXITY_API_KEY` | sonar-reasoning-pro |
 
 ## NVIDIA NIM Notes
@@ -47,9 +50,31 @@ Hosted provider calls leave the local machine. Do not send PHI, patient data,
 or other restricted clinical content unless the caller's data policy allows that
 specific hosted provider path.
 
+## Ollama / AirLLM Local Notes
+
+Ollama is the local-provider route for AirLLM-enabled models on this workspace.
+Discover it when `ollama` is on `PATH` or `OLLAMA_BASE_URL` points at a remote
+Ollama-compatible endpoint. In WSL, the provider also probes the Windows host
+gateway and `host.docker.internal` because Windows Ollama is not always exposed
+on WSL's `127.0.0.1`. Use `OLLAMA_MODEL` to switch models.
+
+Suitable council models from the local pull set:
+
+- `qwen2.5-coder:7b` as the default coding reviewer.
+- `devstral-small-2:24b` for slower but stronger agentic coding review.
+- `mistral-small3.2:24b` or `gpt-oss:20b` for general architecture tradeoffs.
+- `llama3.2:1b` only for smoke tests or very fast sanity checks.
+
+Do not add embedding, OCR, vision, safety-classifier, or healthcare-specialized
+models as default council members. Use those only for explicit task scopes:
+`bge-m3`, `nomic-embed-text`, `glm-ocr`, `qwen3-vl`, `llama3.2-vision`,
+`llama-guard3`, `medgemma`, `medllama2`, and healthcare fine-tunes are not
+general software-engineering council defaults.
+
 ## Troubleshooting
 
-- **Not discovered**: Check API key is set and script is executable
+- **Not discovered**: Check API key is set, local binary is on `PATH`, or
+  provider script is executable
 - **API errors**: Verify key, check rate limits, confirm model name
 - **Parse fails**: Add `echo "$RESPONSE"` to debug, check response format
 

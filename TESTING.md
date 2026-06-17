@@ -41,7 +41,7 @@ bats --verbose-run tests/cache.bats
 | File | Tests | Coverage |
 |------|-------|----------|
 | `cache.bats` | 17 tests | cache_key, cache_get/set, cache_valid, TTL, clear |
-| `cli-providers.bats` | 18 tests | codex/gemini-cli discovery, CLI-prefers-API policy, --list-available / --list-default, flag parsing, gated E2E |
+| `cli-providers.bats` | 22 tests | codex/gemini-cli/ollama discovery, CLI-prefers-API policy, --list-available / --list-default, flag parsing, gated E2E |
 | `display.bats` | 17 tests | tmux/iTerm2 detection, wrapper no-op behavior, manifest writes, pane gating |
 | `keys.bats` | 7 tests | XAI_API_KEY ↔ GROK_API_KEY resolution, precedence, silent-conflict policy |
 | `roles.bats` | 37 tests | presets, validation, prompt injection, assignment |
@@ -71,8 +71,8 @@ Manual testing procedures for features that require API calls or Claude Code int
    export XAI_API_KEY="your-key"          # GROK_API_KEY also accepted
    ```
 
-   Alternatively, install `codex` and/or `gemini` CLIs — they're discovered
-   automatically via PATH and use your existing subscription auth.
+   Alternatively, install `codex`, `gemini`, and/or `ollama` CLIs. They are
+   discovered automatically via PATH; `ollama` can also use `OLLAMA_BASE_URL`.
 
 2. **Plugin loaded** in Claude Code:
    ```bash

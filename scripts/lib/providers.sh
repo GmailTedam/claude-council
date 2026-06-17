@@ -4,7 +4,8 @@
 
 # Discover which provider scripts are available to query.
 # API providers are gated on their <NAME>_API_KEY env var; subscription-auth
-# CLI providers (codex, gemini-cli) are gated on their binary being on PATH.
+# CLI/local providers (codex, gemini-cli, ollama) are gated on their binary or
+# configured endpoint being available.
 discover_providers() {
     local available=()
 
@@ -16,10 +17,17 @@ discover_providers() {
 
         case "$name" in
             codex)
-                command -v codex >/dev/null 2>&1 && is_available=true
+                if [[ "${COUNCIL_DISABLE_CLI_DISCOVERY:-}" != "1" ]]; then
+                    command -v codex >/dev/null 2>&1 && is_available=true
+                fi
                 ;;
             gemini-cli)
-                command -v gemini >/dev/null 2>&1 && is_available=true
+                if [[ "${COUNCIL_DISABLE_CLI_DISCOVERY:-}" != "1" ]]; then
+                    command -v gemini >/dev/null 2>&1 && is_available=true
+                fi
+                ;;
+            ollama)
+                ollama_is_available && is_available=true
                 ;;
             anthropic)  [[ -n "${ANTHROPIC_API_KEY:-}" ]] && is_available=true ;;
             deepseek)   [[ -n "${DEEPSEEK_API_KEY:-}" ]] && is_available=true ;;
@@ -83,6 +91,54 @@ default_provider_set() {
     prefer_cli_over_api "${discovered[@]+"${discovered[@]}"}"
 }
 
+# Candidate Ollama endpoints. The Windows desktop app is reachable from WSL
+# through the default gateway or host.docker.internal, not always 127.0.0.1.
+ollama_candidate_base_urls() {
+    if [[ -n "${OLLAMA_BASE_URL:-}" ]]; then
+        echo "${OLLAMA_BASE_URL%/}"
+        return
+    fi
+
+    echo "http://127.0.0.1:11434"
+
+    local gateway=""
+    if command -v ip >/dev/null 2>&1; then
+        gateway=$(ip route 2>/dev/null | awk '/^default / { print $3; exit }')
+    fi
+    [[ -n "$gateway" ]] && echo "http://${gateway}:11434"
+
+    echo "http://host.docker.internal:11434"
+}
+
+ollama_base_url() {
+    local base
+    for base in $(ollama_candidate_base_urls); do
+        if curl -fsS --max-time 1 "${base%/}/api/tags" >/dev/null 2>&1; then
+            echo "${base%/}"
+            return
+        fi
+    done
+
+    echo "${OLLAMA_BASE_URL:-http://127.0.0.1:11434}"
+}
+
+ollama_is_available() {
+    [[ -n "${OLLAMA_BASE_URL:-}" ]] && return 0
+    if [[ "${COUNCIL_DISABLE_CLI_DISCOVERY:-}" != "1" ]]; then
+        command -v ollama >/dev/null 2>&1 && return 0
+        command -v ollama.exe >/dev/null 2>&1 && return 0
+    fi
+    [[ "${COUNCIL_DISABLE_OLLAMA_HTTP_DISCOVERY:-}" == "1" ]] && return 1
+
+    local base
+    for base in $(ollama_candidate_base_urls); do
+        if curl -fsS --max-time 1 "${base%/}/api/tags" >/dev/null 2>&1; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 # Default model per provider. CLI defaults mirror what the CLI itself picks
 # when invoked without -m, so the cache key and pane header match what's
 # actually run. Bump when the CLI ships a new default we want to track.
@@ -94,6 +150,7 @@ get_model() {
         openai)     echo "${OPENAI_MODEL:-gpt-5.5-pro}" ;;
         grok)       echo "${GROK_MODEL:-grok-4.20-reasoning}" ;;
         nvidia)     echo "${NVIDIA_MODEL:-nvidia/llama-3.3-nemotron-super-49b-v1.5}" ;;
+        ollama)     echo "${OLLAMA_MODEL:-qwen2.5-coder:7b}" ;;
         perplexity) echo "${PERPLEXITY_MODEL:-sonar-reasoning-pro}" ;;
         codex)      echo "${CODEX_MODEL:-gpt-5.5}" ;;
         gemini-cli) echo "${GEMINI_CLI_MODEL:-gemini-3-flash-preview}" ;;
@@ -112,6 +169,7 @@ provider_color() {
         openai|codex)      echo -e "${WHITE}" ;;
         grok)              echo -e "${RED}" ;;
         nvidia)            echo -e "${GREEN}" ;;
+        ollama)            echo -e "${CYAN}" ;;
         perplexity)        echo -e "${GREEN}" ;;
         *)                 echo -e "${CYAN}" ;;
     esac
@@ -119,6 +177,11 @@ provider_color() {
 
 # Vendor emoji for a provider name. Same grouping as provider_color.
 provider_emoji() {
+    if [[ "$1" == "ollama" ]]; then
+        echo "[O]"
+        return
+    fi
+
     case "$1" in
         anthropic)         echo "🟪" ;;
         deepseek)          echo "🟨" ;;

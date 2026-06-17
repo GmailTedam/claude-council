@@ -125,6 +125,43 @@ check_cli_provider() {
     fi
 }
 
+# Check an Ollama provider by asking the local/remote HTTP API for tags.
+check_ollama_provider() {
+    local model="${OLLAMA_MODEL:-qwen2.5-coder:7b}"
+    local base_url
+    base_url=$(ollama_base_url)
+
+    if ! ollama_is_available; then
+        echo "no_binary"
+        return
+    fi
+
+    local start_time end_time duration http_code
+    start_time=$(python3 -c 'import time; print(int(time.time() * 1000))' 2>/dev/null || date +%s)
+
+    local headers=()
+    if [[ -n "${OLLAMA_API_KEY:-}" ]]; then
+        headers=(-H "Authorization: Bearer ${OLLAMA_API_KEY}")
+    fi
+
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
+        "${headers[@]}" \
+        "${base_url%/}/api/tags" 2>/dev/null || echo "000")
+
+    end_time=$(python3 -c 'import time; print(int(time.time() * 1000))' 2>/dev/null || date +%s)
+    duration=$((end_time - start_time))
+
+    if [[ "$http_code" == "200" ]]; then
+        echo "ok:${duration}:${model}"
+    elif [[ "$http_code" == "000" ]]; then
+        echo "timeout"
+    elif [[ "$http_code" == "401" ]] || [[ "$http_code" == "403" ]]; then
+        echo "auth_error:${http_code}"
+    else
+        echo "error:${http_code}"
+    fi
+}
+
 # Main output
 echo ""
 echo -e "${DIM}Provider Status:${RESET}"
@@ -137,6 +174,7 @@ gemini_status=$(check_provider "gemini" "GEMINI_API_KEY" "GEMINI_MODEL" "gemini-
 openai_status=$(check_provider "openai" "OPENAI_API_KEY" "OPENAI_MODEL" "gpt-5.5-pro")
 grok_status=$(check_provider "grok" "GROK_API_KEY" "GROK_MODEL" "grok-4.20-reasoning")
 nvidia_status=$(check_provider "nvidia" "NVIDIA_API_KEY" "NVIDIA_MODEL" "nvidia/llama-3.3-nemotron-super-49b-v1.5")
+ollama_status=$(check_ollama_provider)
 perplexity_status=$(check_provider "perplexity" "PERPLEXITY_API_KEY" "PERPLEXITY_MODEL" "sonar-reasoning-pro")
 codex_status=$(check_cli_provider "codex" "codex")
 gemini_cli_status=$(check_cli_provider "gemini-cli" "gemini")
@@ -192,6 +230,7 @@ format_status "$(provider_emoji gemini)"     "$(provider_color gemini)"     "Gem
 format_status "$(provider_emoji openai)"     "$(provider_color openai)"     "OpenAI"     "$openai_status"
 format_status "$(provider_emoji grok)"       "$(provider_color grok)"       "Grok"       "$grok_status"
 format_status "$(provider_emoji nvidia)"     "$(provider_color nvidia)"     "NVIDIA"     "$nvidia_status"
+format_status "$(provider_emoji ollama)"     "$(provider_color ollama)"     "Ollama"     "$ollama_status"
 format_status "$(provider_emoji perplexity)" "$(provider_color perplexity)" "Perplexity" "$perplexity_status"
 format_status "$(provider_emoji codex)"      "$(provider_color codex)"      "Codex CLI"  "$codex_status"
 format_status "$(provider_emoji gemini-cli)" "$(provider_color gemini-cli)" "Gemini CLI" "$gemini_cli_status"
@@ -206,9 +245,10 @@ available=0
 [[ "$openai_status" == ok:* ]] && available=$((available + 1))
 [[ "$grok_status" == ok:* ]] && available=$((available + 1))
 [[ "$nvidia_status" == ok:* ]] && available=$((available + 1))
+[[ "$ollama_status" == ok:* ]] && available=$((available + 1))
 [[ "$perplexity_status" == ok:* ]] && available=$((available + 1))
 [[ "$codex_status" == ok:* ]] && available=$((available + 1))
 [[ "$gemini_cli_status" == ok:* ]] && available=$((available + 1))
 
-echo -e "${DIM}${available}/9 providers available${RESET}"
+echo -e "${DIM}${available}/10 providers available${RESET}"
 echo ""

@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# ABOUTME: Tests for codex/gemini-cli provider integration and CLI-prefers-API policy
+# ABOUTME: Tests for codex/gemini-cli/ollama provider integration and CLI-prefers-API policy
 # ABOUTME: Covers lib/providers.sh discovery + filter, plus query-council.sh wiring
 
 load test_helper
@@ -11,6 +11,7 @@ PROVIDERS_DIR_REAL="${SCRIPTS_DIR}/providers"
 setup() {
     mkdir -p "$TEST_CACHE_DIR"
     unset GEMINI_API_KEY OPENAI_API_KEY GROK_API_KEY PERPLEXITY_API_KEY NVIDIA_API_KEY NVIDIA_BUILD_API_KEY
+    unset OLLAMA_BASE_URL OLLAMA_MODEL COUNCIL_DISABLE_CLI_DISCOVERY
 }
 
 teardown() {
@@ -46,11 +47,20 @@ source_lib_and_call() {
     [[ "$output" == *"gemini-cli"* ]]
 }
 
-@test "discover_providers: excludes codex when binary is missing" {
-    # Strip codex from PATH by running with a minimal PATH
+@test "discover_providers: includes ollama when binary is on PATH" {
+    if ! command_exists ollama; then skip "ollama CLI not installed"; fi
+    run source_lib_and_call 'discover_providers'
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ollama"* ]]
+}
+
+@test "discover_providers: excludes local providers when binaries are missing" {
+    # Strip local provider binaries from PATH by running with a minimal PATH
     run bash -c "
         set -euo pipefail
         export PATH=/usr/bin:/bin
+        unset OLLAMA_BASE_URL
+        export COUNCIL_DISABLE_OLLAMA_HTTP_DISCOVERY=1
         export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
         source '${PROVIDERS_LIB}'
         discover_providers
@@ -58,6 +68,20 @@ source_lib_and_call() {
     [ "$status" -eq 0 ]
     [[ "$output" != *"codex"* ]]
     [[ "$output" != *"gemini-cli"* ]]
+    [[ "$output" != *"ollama"* ]]
+}
+
+@test "discover_providers: includes ollama when OLLAMA_BASE_URL is set" {
+    run bash -c "
+        set -euo pipefail
+        export PATH=/usr/bin:/bin
+        export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
+        export OLLAMA_BASE_URL='http://127.0.0.1:11434'
+        source '${PROVIDERS_LIB}'
+        discover_providers
+    "
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ollama"* ]]
 }
 
 @test "discover_providers: excludes API providers when keys unset" {
@@ -105,6 +129,22 @@ source_lib_and_call() {
     "
     [ "$status" -eq 0 ]
     [[ "$output" == *"nvidia"* ]]
+}
+
+@test "get_model: ollama defaults to coding model and respects override" {
+    run source_lib_and_call 'get_model ollama'
+    [ "$status" -eq 0 ]
+    [[ "$output" == "qwen2.5-coder:7b" ]]
+
+    run bash -c "
+        set -euo pipefail
+        export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
+        export OLLAMA_MODEL='devstral-small-2:24b'
+        source '${PROVIDERS_LIB}'
+        get_model ollama
+    "
+    [ "$status" -eq 0 ]
+    [[ "$output" == "devstral-small-2:24b" ]]
 }
 
 # ============================================================================
@@ -238,4 +278,13 @@ source_lib_and_call() {
     run "${PROVIDERS_DIR_REAL}/gemini-cli.sh" "Reply with exactly the word: OK"
     [ "$status" -eq 0 ]
     [[ "$output" == *"OK"* ]]
+}
+
+@test "ollama.sh: returns response for trivial prompt (E2E)" {
+    [[ "${COUNCIL_E2E:-}" == "1" ]] || skip "set COUNCIL_E2E=1 to run real local calls"
+    if ! command_exists ollama; then skip "ollama CLI not installed"; fi
+    export OLLAMA_MODEL="${OLLAMA_MODEL:-llama3.2:1b}"
+    run "${PROVIDERS_DIR_REAL}/ollama.sh" "Reply briefly with any non-empty answer."
+    [ "$status" -eq 0 ]
+    [[ -n "$output" ]]
 }
