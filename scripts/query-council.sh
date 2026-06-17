@@ -14,6 +14,7 @@ source "${SCRIPT_DIR}/lib/keys.sh"
 source "${SCRIPT_DIR}/lib/display.sh"
 source "${SCRIPT_DIR}/lib/verbosity.sh"
 resolve_grok_key
+resolve_nvidia_key
 
 # Helper: current time in milliseconds (falls back to seconds if python3 missing)
 now_ms() {
@@ -27,7 +28,7 @@ usage() {
 Usage: query-council.sh [OPTIONS] [--] <prompt>
 
 Options:
-  --providers LIST    Comma-separated providers (gemini,openai,grok,perplexity)
+  --providers LIST    Comma-separated providers (gemini,openai,grok,perplexity,nvidia)
   --roles LIST        Assign roles to providers (security,performance,maintainability)
                       Or use preset: balanced, security-focused, architecture, review
   --verbosity LEVEL   Response verbosity: brief, standard (default), detailed
@@ -179,7 +180,7 @@ if [[ "$LIST_AVAILABLE" == true ]]; then
     read -ra DISCOVERED <<< "$(discover_providers)"
     if [[ ${#DISCOVERED[@]} -eq 0 ]]; then
         echo "No providers configured."
-        echo "  Set an API key (ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, XAI_API_KEY/GROK_API_KEY, or PERPLEXITY_API_KEY)"
+        echo "  Set an API key (ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, XAI_API_KEY/GROK_API_KEY, PERPLEXITY_API_KEY, or NVIDIA_API_KEY/NVIDIA_BUILD_API_KEY)"
         echo "  or install a CLI agent (codex, gemini)."
         exit 0
     fi
@@ -256,7 +257,7 @@ fi
 
 if [[ ${#PROVIDERS[@]} -eq 0 ]]; then
     echo "Error: No providers configured." >&2
-    echo "  Set an API key (ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, XAI_API_KEY/GROK_API_KEY, or PERPLEXITY_API_KEY)" >&2
+    echo "  Set an API key (ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, XAI_API_KEY/GROK_API_KEY, PERPLEXITY_API_KEY, or NVIDIA_API_KEY/NVIDIA_BUILD_API_KEY)" >&2
     echo "  or install a CLI agent (codex, gemini)." >&2
     exit 1
 fi

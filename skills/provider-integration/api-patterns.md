@@ -114,3 +114,9 @@ echo "$TEXT"
 - Key: `COHERE_API_KEY`
 - Model: `command-r-plus`
 - Format: Custom (see Cohere docs)
+
+### NVIDIA NIM
+- Endpoint: `https://integrate.api.nvidia.com/v1/chat/completions`
+- Key: `NVIDIA_API_KEY` (`NVIDIA_BUILD_API_KEY` fallback)
+- Model: `nvidia/llama-3.3-nemotron-super-49b-v1.5`
+- Format: OpenAI-compatible

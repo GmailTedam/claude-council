@@ -26,6 +26,7 @@ discover_providers() {
             gemini)     [[ -n "${GEMINI_API_KEY:-}" ]] && is_available=true ;;
             openai)     [[ -n "${OPENAI_API_KEY:-}" ]] && is_available=true ;;
             grok)       [[ -n "${GROK_API_KEY:-}" ]] && is_available=true ;;
+            nvidia)     [[ -n "${NVIDIA_API_KEY:-}" || -n "${NVIDIA_BUILD_API_KEY:-}" ]] && is_available=true ;;
             *)
                 local up_var
                 up_var=$(echo "$name" | tr '[:lower:]' '[:upper:]')_API_KEY
@@ -92,6 +93,7 @@ get_model() {
         gemini)     echo "${GEMINI_MODEL:-gemini-3.1-pro-preview}" ;;
         openai)     echo "${OPENAI_MODEL:-gpt-5.5-pro}" ;;
         grok)       echo "${GROK_MODEL:-grok-4.20-reasoning}" ;;
+        nvidia)     echo "${NVIDIA_MODEL:-nvidia/llama-3.3-nemotron-super-49b-v1.5}" ;;
         perplexity) echo "${PERPLEXITY_MODEL:-sonar-reasoning-pro}" ;;
         codex)      echo "${CODEX_MODEL:-gpt-5.5}" ;;
         gemini-cli) echo "${GEMINI_CLI_MODEL:-gemini-3-flash-preview}" ;;
@@ -109,6 +111,7 @@ provider_color() {
         gemini|gemini-cli) echo -e "${BLUE}" ;;
         openai|codex)      echo -e "${WHITE}" ;;
         grok)              echo -e "${RED}" ;;
+        nvidia)            echo -e "${GREEN}" ;;
         perplexity)        echo -e "${GREEN}" ;;
         *)                 echo -e "${CYAN}" ;;
     esac
@@ -122,6 +125,7 @@ provider_emoji() {
         gemini|gemini-cli) echo "🟦" ;;
         openai|codex)      echo "🔳" ;;
         grok)              echo "🟥" ;;
+        nvidia)            echo "🟩" ;;
         perplexity)        echo "🟩" ;;
         *)                 echo "⬛" ;;
     esac

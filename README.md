@@ -12,7 +12,8 @@ A Claude Code plugin that consults multiple AI coding agents in parallel and sho
 /plugin install claude-council
 
 # 2. Configure at least one provider — any of these works:
-export OPENAI_API_KEY="..."         # or GEMINI_API_KEY, ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, XAI_API_KEY, PERPLEXITY_API_KEY
+export OPENAI_API_KEY="..."         # or GEMINI_API_KEY, ANTHROPIC_API_KEY, DEEPSEEK_API_KEY,
+                                    # XAI_API_KEY, PERPLEXITY_API_KEY, NVIDIA_API_KEY
                                     # OR install the codex / gemini CLIs (uses your existing
                                     # subscription — no API key needed)
 
@@ -48,7 +49,7 @@ Inside tmux, results stream into a side pane in real time with vendor-colored ba
 
 ## Features
 
-- Query Gemini, OpenAI (GPT/Codex), Grok, Perplexity, Anthropic, and DeepSeek simultaneously
+- Query Gemini, OpenAI (GPT/Codex), Grok, Perplexity, Anthropic, DeepSeek, and NVIDIA NIM simultaneously
 - Use the `codex` and `gemini` CLIs (subscription auth) when installed — preferred over their API siblings
 - Side-by-side comparison of responses with vendor-colored headers
 - Streaming tmux pane that renders responses as they land
@@ -312,6 +313,7 @@ export GEMINI_API_KEY="your-key"
 export OPENAI_API_KEY="your-key"
 export XAI_API_KEY="your-key"          # GROK_API_KEY also accepted
 export PERPLEXITY_API_KEY="your-key"
+export NVIDIA_API_KEY="your-key"       # NVIDIA_BUILD_API_KEY also accepted
 export ANTHROPIC_API_KEY="your-key"
 export DEEPSEEK_API_KEY="your-key"
 ```
@@ -328,6 +330,8 @@ providers:
   grok:
     api_key: "your-key"
   perplexity:
+    api_key: "your-key"
+  nvidia:
     api_key: "your-key"
   anthropic:
     api_key: "your-key"
@@ -383,9 +387,14 @@ export GEMINI_MODEL="gemini-3.1-pro-preview"       # default
 export OPENAI_MODEL="gpt-5.5-pro"                   # default
 export GROK_MODEL="grok-4.20-reasoning"             # default
 export PERPLEXITY_MODEL="sonar-reasoning-pro"       # default (reasoning + search)
+export NVIDIA_MODEL="nvidia/llama-3.3-nemotron-super-49b-v1.5" # default
 export ANTHROPIC_MODEL="claude-3-7-sonnet-20250219" # default
 export DEEPSEEK_MODEL="deepseek-chat"               # default
 ```
+
+For a private or local NVIDIA NIM endpoint, set `NVIDIA_BASE_URL` to the API
+base URL, for example `https://integrate.api.nvidia.com/v1` or an internal
+`/v1` endpoint.
 
 Response length cap (default: 2048):
 
@@ -403,6 +412,7 @@ The bump applies to:
 - **OpenAI**: `codex-*`, `*-codex`, `o3-*`, `o4-*`, `gpt-5.[4-9]*`
 - **Gemini**: `gemini-3*`, `*thinking*`
 - **Grok**: `*reasoning*`, `grok-4*`, `grok-3-mini-*`, `grok-build-*`
+- **NVIDIA**: `*reasoning*`
 - **Perplexity**: `sonar-reasoning*`, `*deep-research*`
 
 | Model Type | COUNCIL_MAX_TOKENS | Actual Limit |

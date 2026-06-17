@@ -8,6 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/keys.sh"
 source "$SCRIPT_DIR/lib/providers.sh"
 resolve_grok_key
+resolve_nvidia_key
 
 # Colors
 BLUE='\033[34m'
@@ -53,6 +54,12 @@ check_provider() {
             http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
                 -H "Authorization: Bearer ${api_key}" \
                 "https://api.x.ai/v1/models" 2>/dev/null || echo "000")
+            ;;
+        nvidia)
+            local base_url="${NVIDIA_BASE_URL:-https://integrate.api.nvidia.com/v1}"
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
+                -H "Authorization: Bearer ${api_key}" \
+                "${base_url%/}/models" 2>/dev/null || echo "000")
             ;;
         anthropic)
             http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
@@ -129,6 +136,7 @@ deepseek_status=$(check_provider "deepseek" "DEEPSEEK_API_KEY" "DEEPSEEK_MODEL" 
 gemini_status=$(check_provider "gemini" "GEMINI_API_KEY" "GEMINI_MODEL" "gemini-3.1-pro-preview")
 openai_status=$(check_provider "openai" "OPENAI_API_KEY" "OPENAI_MODEL" "gpt-5.5-pro")
 grok_status=$(check_provider "grok" "GROK_API_KEY" "GROK_MODEL" "grok-4.20-reasoning")
+nvidia_status=$(check_provider "nvidia" "NVIDIA_API_KEY" "NVIDIA_MODEL" "nvidia/llama-3.3-nemotron-super-49b-v1.5")
 perplexity_status=$(check_provider "perplexity" "PERPLEXITY_API_KEY" "PERPLEXITY_MODEL" "sonar-reasoning-pro")
 codex_status=$(check_cli_provider "codex" "codex")
 gemini_cli_status=$(check_cli_provider "gemini-cli" "gemini")
@@ -183,6 +191,7 @@ format_status "$(provider_emoji deepseek)"   "$(provider_color deepseek)"   "Dee
 format_status "$(provider_emoji gemini)"     "$(provider_color gemini)"     "Gemini"     "$gemini_status"
 format_status "$(provider_emoji openai)"     "$(provider_color openai)"     "OpenAI"     "$openai_status"
 format_status "$(provider_emoji grok)"       "$(provider_color grok)"       "Grok"       "$grok_status"
+format_status "$(provider_emoji nvidia)"     "$(provider_color nvidia)"     "NVIDIA"     "$nvidia_status"
 format_status "$(provider_emoji perplexity)" "$(provider_color perplexity)" "Perplexity" "$perplexity_status"
 format_status "$(provider_emoji codex)"      "$(provider_color codex)"      "Codex CLI"  "$codex_status"
 format_status "$(provider_emoji gemini-cli)" "$(provider_color gemini-cli)" "Gemini CLI" "$gemini_cli_status"
@@ -196,9 +205,10 @@ available=0
 [[ "$gemini_status" == ok:* ]] && available=$((available + 1))
 [[ "$openai_status" == ok:* ]] && available=$((available + 1))
 [[ "$grok_status" == ok:* ]] && available=$((available + 1))
+[[ "$nvidia_status" == ok:* ]] && available=$((available + 1))
 [[ "$perplexity_status" == ok:* ]] && available=$((available + 1))
 [[ "$codex_status" == ok:* ]] && available=$((available + 1))
 [[ "$gemini_cli_status" == ok:* ]] && available=$((available + 1))
 
-echo -e "${DIM}${available}/8 providers available${RESET}"
+echo -e "${DIM}${available}/9 providers available${RESET}"
 echo ""

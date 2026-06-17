@@ -7,7 +7,7 @@ load test_helper
 LIB="${LIB_DIR}/keys.sh"
 
 setup() {
-    unset GROK_API_KEY XAI_API_KEY
+    unset GROK_API_KEY XAI_API_KEY NVIDIA_API_KEY NVIDIA_BUILD_API_KEY
 }
 
 @test "keys: resolve_grok_key is a no-op when neither var is set" {
@@ -62,4 +62,32 @@ setup() {
     resolve_grok_key
     run bash -c 'echo "$GROK_API_KEY"'
     [ "$output" = "from-xai" ]
+}
+
+@test "keys: resolve_nvidia_key is a no-op when neither var is set" {
+    source "$LIB"
+    resolve_nvidia_key
+    [ -z "${NVIDIA_API_KEY:-}" ]
+}
+
+@test "keys: NVIDIA_API_KEY alone is preserved" {
+    export NVIDIA_API_KEY="canonical"
+    source "$LIB"
+    resolve_nvidia_key
+    [ "$NVIDIA_API_KEY" = "canonical" ]
+}
+
+@test "keys: NVIDIA_BUILD_API_KEY populates NVIDIA_API_KEY fallback" {
+    export NVIDIA_BUILD_API_KEY="build-key"
+    source "$LIB"
+    resolve_nvidia_key
+    [ "$NVIDIA_API_KEY" = "build-key" ]
+}
+
+@test "keys: NVIDIA_API_KEY wins when both NVIDIA vars are set" {
+    export NVIDIA_API_KEY="canonical"
+    export NVIDIA_BUILD_API_KEY="build-key"
+    source "$LIB"
+    resolve_nvidia_key
+    [ "$NVIDIA_API_KEY" = "canonical" ]
 }

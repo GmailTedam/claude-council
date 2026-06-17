@@ -1,6 +1,6 @@
 ---
 name: querying-council
-description: Executes council queries by running the query pipeline across selected AI providers (Gemini, OpenAI, Grok, Perplexity), displaying formatted responses verbatim, and generating a synthesis of consensus, divergence, and recommendations. Invoked by the ask command during standard (non-agent) council queries.
+description: Executes council queries by running the query pipeline across selected AI providers (Gemini, OpenAI, Grok, Perplexity, Anthropic, DeepSeek, NVIDIA NIM, and CLI-backed providers), displaying formatted responses verbatim, and generating a synthesis of consensus, divergence, and recommendations. Invoked by the ask command during standard (non-agent) council queries.
 ---
 
 # Council Query Execution
@@ -55,4 +55,5 @@ Preserve this format when displaying results:
 | Gemini | 🟦 Gemini |
 | OpenAI | 🔳 OpenAI |
 | Grok | 🟥 Grok |
+| NVIDIA | 🟩 NVIDIA |
 | Perplexity | 🟩 Perplexity |

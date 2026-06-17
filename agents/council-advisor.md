@@ -72,7 +72,7 @@ When you identify a council-worthy situation:
 
 `/claude-council:ask "Given [context], what's the best approach for [specific question]?"`
 
-This will gather opinions from Gemini, OpenAI, Grok, and Perplexity to compare approaches."
+This will gather opinions from the configured council providers, such as Gemini, OpenAI, Grok, Perplexity, DeepSeek, Anthropic, NVIDIA NIM, or CLI-backed providers."
 
 **When NOT to Suggest the Council:**
 - Simple implementation questions with clear answers

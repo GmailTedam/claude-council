@@ -10,7 +10,7 @@ PROVIDERS_DIR_REAL="${SCRIPTS_DIR}/providers"
 
 setup() {
     mkdir -p "$TEST_CACHE_DIR"
-    unset GEMINI_API_KEY OPENAI_API_KEY GROK_API_KEY PERPLEXITY_API_KEY
+    unset GEMINI_API_KEY OPENAI_API_KEY GROK_API_KEY PERPLEXITY_API_KEY NVIDIA_API_KEY NVIDIA_BUILD_API_KEY
 }
 
 teardown() {
@@ -64,6 +64,7 @@ source_lib_and_call() {
     run source_lib_and_call 'discover_providers'
     [ "$status" -eq 0 ]
     [[ "$output" != *"openai"* ]]
+    [[ "$output" != *"nvidia"* ]]
     [[ "$output" != *"perplexity"* ]]
 }
 
@@ -78,6 +79,32 @@ source_lib_and_call() {
     "
     [ "$status" -eq 0 ]
     [[ "$output" == *"openai"* ]]
+}
+
+@test "discover_providers: includes nvidia when NVIDIA_API_KEY is set" {
+    export NVIDIA_API_KEY="test-key"
+    run bash -c "
+        set -euo pipefail
+        export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
+        export NVIDIA_API_KEY='test-key'
+        source '${PROVIDERS_LIB}'
+        discover_providers
+    "
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"nvidia"* ]]
+}
+
+@test "discover_providers: includes nvidia when only NVIDIA_BUILD_API_KEY is set" {
+    export NVIDIA_BUILD_API_KEY="test-key"
+    run bash -c "
+        set -euo pipefail
+        export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
+        export NVIDIA_BUILD_API_KEY='test-key'
+        source '${PROVIDERS_LIB}'
+        discover_providers
+    "
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"nvidia"* ]]
 }
 
 # ============================================================================

@@ -26,7 +26,26 @@ Each provider is a shell script in `scripts/providers/` that:
 | Gemini | `GEMINI_API_KEY` | gemini-3.1-pro-preview |
 | OpenAI | `OPENAI_API_KEY` | gpt-5.5-pro |
 | Grok | `XAI_API_KEY` (or `GROK_API_KEY`) | grok-4.20-reasoning |
+| NVIDIA NIM | `NVIDIA_API_KEY` (or `NVIDIA_BUILD_API_KEY`) | nvidia/llama-3.3-nemotron-super-49b-v1.5 |
 | Perplexity | `PERPLEXITY_API_KEY` | sonar-reasoning-pro |
+
+## NVIDIA NIM Notes
+
+NVIDIA hosted NIM uses an OpenAI-compatible endpoint:
+`https://integrate.api.nvidia.com/v1/chat/completions`.
+
+Use `NVIDIA_API_KEY` as the canonical key name. Keep `NVIDIA_BUILD_API_KEY`
+as a fallback for keys generated through NVIDIA Build. Set `NVIDIA_BASE_URL`
+to a private or local NIM `/v1` endpoint when one is available. Good council
+defaults:
+
+- `nvidia/llama-3.3-nemotron-super-49b-v1.5` for broad architecture and implementation review
+- `nvidia/nvidia-nemotron-nano-9b-v2` when latency matters more than depth
+- `nvidia/nemotron-content-safety-reasoning-4b` only for explicit safety-classification checks
+
+Hosted provider calls leave the local machine. Do not send PHI, patient data,
+or other restricted clinical content unless the caller's data policy allows that
+specific hosted provider path.
 
 ## Troubleshooting
 
