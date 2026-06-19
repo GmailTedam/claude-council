@@ -19,10 +19,12 @@ if [[ -z "$PROMPT" ]]; then
     exit 1
 fi
 
-MODEL=$(get_model ollama)
+load_ollama_env
+
 BASE_TOKENS="${COUNCIL_MAX_TOKENS:-2048}"
 SYSTEM="${VERBOSITY_PREFIX:+$VERBOSITY_PREFIX }$BASE_SYSTEM_PROMPT"
 BASE_URL=$(ollama_base_url)
+MODEL=$(ollama_default_model "$BASE_URL")
 ENDPOINT="${BASE_URL%/}/api/chat"
 
 PAYLOAD=$(jq -n --arg prompt "$PROMPT" --arg model "$MODEL" --argjson tokens "$BASE_TOKENS" --arg system "$SYSTEM" '{

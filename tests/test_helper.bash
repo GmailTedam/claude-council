@@ -15,6 +15,7 @@ export TEST_FIXTURES_DIR="${BATS_TEST_DIRNAME}/fixtures"
 # Override cache dir for tests
 export COUNCIL_CACHE_DIR="$TEST_CACHE_DIR"
 export COUNCIL_CACHE_TTL=3600
+export COUNCIL_DISABLE_WINDOWS_ENV_FALLBACK=1
 
 # Tests should never spawn the streaming tmux pane — it spawns a real
 # split that waits for keypress, leaving orphans that accumulate across

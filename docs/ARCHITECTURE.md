@@ -133,8 +133,11 @@ Three flavors share the interface:
   When both an API and CLI sibling exist (codex+openai, gemini-cli+gemini),
   the orchestrator prefers the CLI by default; explicit `--providers` wins
   over the policy.
-- **Local providers** (`ollama`) - gated on the `ollama` binary or
-  `OLLAMA_BASE_URL`, talk to a local or remote Ollama-compatible endpoint.
+- **Local/cloud providers** (`ollama`) - gated on `OLLAMA_API_KEY`, the
+  `ollama` binary, or `OLLAMA_BASE_URL`, talk to direct Ollama Cloud or a local
+  or remote Ollama-compatible endpoint. On Windows-hosted shells, the Ollama
+  provider can read `OLLAMA_API_KEY` and `OLLAMA_PUBKEY` from Windows
+  process/user/machine environment scopes when Bash did not inherit them.
 
 Environment-based configuration:
 - `{PROVIDER}_API_KEY` - Required authentication for API providers
@@ -326,8 +329,9 @@ claude-council/
 | `{PROVIDER}_MODEL` | varies | Model override (API providers) |
 | `CODEX_MODEL` | gpt-5.5 | Model passed to `codex exec -m` |
 | `GEMINI_CLI_MODEL` | gemini-3-flash-preview | Model passed to `gemini -m` |
-| `OLLAMA_MODEL` | qwen2.5-coder:7b | Model passed to Ollama `/api/chat` |
-| `OLLAMA_BASE_URL` | http://127.0.0.1:11434 | Ollama-compatible endpoint |
+| `OLLAMA_MODEL` | glm-5.2 / glm-5.2:cloud | Model passed to Ollama `/api/chat` |
+| `OLLAMA_BASE_URL` | https://ollama.com with `OLLAMA_API_KEY`; otherwise http://127.0.0.1:11434 | Ollama-compatible endpoint |
+| `OLLAMA_PUBKEY` | - | Optional Ollama public key loaded from Windows env for account parity; not sent as API auth |
 | `COUNCIL_MAX_TOKENS` | 2048 | Max response tokens |
 | `COUNCIL_MAX_RETRIES` | 3 | Retry attempts |
 | `COUNCIL_RETRY_DELAY` | 1 | Initial retry delay (s) |

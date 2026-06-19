@@ -11,7 +11,7 @@ PROVIDERS_DIR_REAL="${SCRIPTS_DIR}/providers"
 setup() {
     mkdir -p "$TEST_CACHE_DIR"
     unset GEMINI_API_KEY OPENAI_API_KEY GROK_API_KEY PERPLEXITY_API_KEY NVIDIA_API_KEY NVIDIA_BUILD_API_KEY
-    unset OLLAMA_BASE_URL OLLAMA_MODEL COUNCIL_DISABLE_CLI_DISCOVERY
+    unset OLLAMA_API_KEY OLLAMA_BASE_URL OLLAMA_MODEL COUNCIL_DISABLE_CLI_DISCOVERY
 }
 
 teardown() {
@@ -84,6 +84,137 @@ source_lib_and_call() {
     [[ "$output" == *"ollama"* ]]
 }
 
+@test "discover_providers: includes ollama when OLLAMA_API_KEY is set" {
+    run bash -c "
+        set -euo pipefail
+        export PATH=/usr/bin:/bin
+        export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
+        export OLLAMA_API_KEY='test-key'
+        export COUNCIL_DISABLE_OLLAMA_HTTP_DISCOVERY=1
+        source '${PROVIDERS_LIB}'
+        discover_providers
+    "
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ollama"* ]]
+}
+
+@test "discover_providers: includes ollama from Windows user env fallback" {
+    local fake_bin="${TEST_TMP_DIR}/fake-bin"
+    mkdir -p "$fake_bin"
+    cat > "${fake_bin}/powershell.exe" <<'EOF'
+#!/bin/sh
+printf "test-key"
+EOF
+    chmod +x "${fake_bin}/powershell.exe"
+
+    run bash -c "
+        set -euo pipefail
+        export PATH='${fake_bin}:/usr/bin:/bin'
+        export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
+        unset OLLAMA_API_KEY OLLAMA_BASE_URL COUNCIL_DISABLE_WINDOWS_ENV_FALLBACK
+        export COUNCIL_DISABLE_CLI_DISCOVERY=1
+        export COUNCIL_DISABLE_OLLAMA_HTTP_DISCOVERY=1
+        source '${PROVIDERS_LIB}'
+        discover_providers
+    "
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ollama"* ]]
+}
+
+@test "ollama.sh: sends Authorization header from Windows env fallback" {
+    local fake_bin="${TEST_TMP_DIR}/fake-bin"
+    local curl_log="${TEST_TMP_DIR}/curl.args"
+    mkdir -p "$fake_bin"
+    cat > "${fake_bin}/powershell.exe" <<'EOF'
+#!/bin/sh
+printf "test-key"
+EOF
+    cat > "${fake_bin}/curl" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" >> "$CURL_ARGS_LOG"
+out_file=
+body='{"models":[]}'
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -o)
+            shift
+            out_file="$1"
+            ;;
+        */api/chat)
+            body='{"message":{"content":"OK"}}'
+            ;;
+    esac
+    shift
+done
+if [ -n "$out_file" ]; then
+    printf '%s' "$body" > "$out_file"
+fi
+printf '200'
+EOF
+    chmod +x "${fake_bin}/powershell.exe" "${fake_bin}/curl"
+
+    run bash -c "
+        set -euo pipefail
+        export PATH='${fake_bin}:${PATH}'
+        export CURL_ARGS_LOG='${curl_log}'
+        unset OLLAMA_API_KEY OLLAMA_PUBKEY COUNCIL_DISABLE_WINDOWS_ENV_FALLBACK
+        export OLLAMA_BASE_URL='https://ollama.com'
+        '${PROVIDERS_DIR_REAL}/ollama.sh' 'Reply exactly: OK'
+    "
+    [ "$status" -eq 0 ]
+    [[ "$output" == "OK" ]]
+    grep -q 'Authorization: Bearer test-key' "$curl_log"
+}
+
+@test "query-council: can query ollama cloud provider" {
+    local fake_bin="${TEST_TMP_DIR}/fake-bin"
+    local curl_log="${TEST_TMP_DIR}/curl.args"
+    local prompt="In one short sentence, name one benefit of indexes."
+    mkdir -p "$fake_bin"
+    cat > "${fake_bin}/powershell.exe" <<'EOF'
+#!/bin/sh
+printf "test-key"
+EOF
+    cat > "${fake_bin}/curl" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" >> "$CURL_ARGS_LOG"
+out_file=
+body='{"models":[]}'
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -o)
+            shift
+            out_file="$1"
+            ;;
+        */api/chat)
+            body='{"message":{"content":"OK"}}'
+            ;;
+    esac
+    shift
+done
+if [ -n "$out_file" ]; then
+    printf '%s' "$body" > "$out_file"
+fi
+printf '200'
+EOF
+    chmod +x "${fake_bin}/powershell.exe" "${fake_bin}/curl"
+
+    run bash -c "
+        set -euo pipefail
+        export PATH='${fake_bin}:${PATH}'
+        export CURL_ARGS_LOG='${curl_log}'
+        unset OLLAMA_API_KEY OLLAMA_PUBKEY COUNCIL_DISABLE_WINDOWS_ENV_FALLBACK
+        export OLLAMA_BASE_URL='https://ollama.com'
+        '${SCRIPT}' --providers ollama --no-cache --verbosity brief --no-pane --prompt '${prompt}' 2>/dev/null
+    "
+    [ "$status" -eq 0 ]
+    [[ "$(echo "$output" | jq -r '.metadata.prompt')" == "$prompt" ]]
+    [[ "$(echo "$output" | jq -r '.round1.ollama.status')" == "success" ]]
+    [[ "$(echo "$output" | jq -r '.round1.ollama.model')" == "glm-5.2" ]]
+    [[ "$(echo "$output" | jq -r '.round1.ollama.response')" == "OK" ]]
+    grep -q 'Authorization: Bearer test-key' "$curl_log"
+}
+
 @test "discover_providers: excludes API providers when keys unset" {
     run source_lib_and_call 'discover_providers'
     [ "$status" -eq 0 ]
@@ -131,10 +262,20 @@ source_lib_and_call() {
     [[ "$output" == *"nvidia"* ]]
 }
 
-@test "get_model: ollama defaults to coding model and respects override" {
+@test "get_model: ollama defaults to GLM cloud model and respects override" {
     run source_lib_and_call 'get_model ollama'
     [ "$status" -eq 0 ]
-    [[ "$output" == "qwen2.5-coder:7b" ]]
+    [[ "$output" == "glm-5.2:cloud" ]]
+
+    run bash -c "
+        set -euo pipefail
+        export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
+        export OLLAMA_BASE_URL='https://ollama.com'
+        source '${PROVIDERS_LIB}'
+        get_model ollama
+    "
+    [ "$status" -eq 0 ]
+    [[ "$output" == "glm-5.2" ]]
 
     run bash -c "
         set -euo pipefail

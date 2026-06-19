@@ -4,8 +4,8 @@
 
 # Discover which provider scripts are available to query.
 # API providers are gated on their <NAME>_API_KEY env var; subscription-auth
-# CLI/local providers (codex, gemini-cli, ollama) are gated on their binary or
-# configured endpoint being available.
+# CLI/local/cloud providers (codex, gemini-cli, ollama) are gated on their
+# binary, endpoint, or cloud API key being available.
 discover_providers() {
     local available=()
 
@@ -91,12 +91,57 @@ default_provider_set() {
     prefer_cli_over_api "${discovered[@]+"${discovered[@]}"}"
 }
 
-# Candidate Ollama endpoints. The Windows desktop app is reachable from WSL
-# through the default gateway or host.docker.internal, not always 127.0.0.1.
+windows_env_value() {
+    [[ "${COUNCIL_DISABLE_WINDOWS_ENV_FALLBACK:-}" == "1" ]] && return 0
+
+    local name="$1"
+    case "$name" in
+        OLLAMA_API_KEY|OLLAMA_PUBKEY) ;;
+        *) return 0 ;;
+    esac
+
+    local ps=""
+    local candidate
+    for candidate in powershell.exe powershell pwsh.exe pwsh; do
+        if command -v "$candidate" >/dev/null 2>&1; then
+            ps="$candidate"
+            break
+        fi
+    done
+    [[ -n "$ps" ]] || return 0
+
+    "$ps" -NoProfile -NonInteractive -Command "\$v = [Environment]::GetEnvironmentVariable('$name', 'Process'); if ([string]::IsNullOrEmpty(\$v)) { \$v = [Environment]::GetEnvironmentVariable('$name', 'User') }; if ([string]::IsNullOrEmpty(\$v)) { \$v = [Environment]::GetEnvironmentVariable('$name', 'Machine') }; [Console]::Out.Write(\$v)" 2>/dev/null | tr -d '\r'
+}
+
+load_ollama_env() {
+    if [[ -z "${OLLAMA_API_KEY:-}" ]]; then
+        local api_key
+        api_key=$(windows_env_value OLLAMA_API_KEY)
+        [[ -n "$api_key" ]] && export OLLAMA_API_KEY="$api_key"
+    fi
+
+    if [[ -z "${OLLAMA_PUBKEY:-}" ]]; then
+        local pubkey
+        pubkey=$(windows_env_value OLLAMA_PUBKEY)
+        [[ -n "$pubkey" ]] && export OLLAMA_PUBKEY="$pubkey"
+    fi
+
+    return 0
+}
+
+# Candidate Ollama endpoints. Direct Ollama Cloud uses https://ollama.com when
+# OLLAMA_API_KEY is set. The Windows desktop app is reachable from WSL through
+# the default gateway or host.docker.internal, not always 127.0.0.1.
 ollama_candidate_base_urls() {
+    load_ollama_env
+
     if [[ -n "${OLLAMA_BASE_URL:-}" ]]; then
         echo "${OLLAMA_BASE_URL%/}"
         return
+    fi
+
+    if [[ -n "${OLLAMA_API_KEY:-}" ]]; then
+        echo "https://ollama.com"
     fi
 
     echo "http://127.0.0.1:11434"
@@ -111,19 +156,34 @@ ollama_candidate_base_urls() {
 }
 
 ollama_base_url() {
+    load_ollama_env
+
     local base
     for base in $(ollama_candidate_base_urls); do
-        if curl -fsS --max-time 1 "${base%/}/api/tags" >/dev/null 2>&1; then
+        local curl_args=(-fsS --max-time 1)
+        if [[ -n "${OLLAMA_API_KEY:-}" ]]; then
+            curl_args+=(-H "Authorization: Bearer ${OLLAMA_API_KEY}")
+        fi
+        if curl "${curl_args[@]}" "${base%/}/api/tags" >/dev/null 2>&1; then
             echo "${base%/}"
             return
         fi
     done
 
-    echo "${OLLAMA_BASE_URL:-http://127.0.0.1:11434}"
+    if [[ -n "${OLLAMA_BASE_URL:-}" ]]; then
+        echo "${OLLAMA_BASE_URL%/}"
+    elif [[ -n "${OLLAMA_API_KEY:-}" ]]; then
+        echo "https://ollama.com"
+    else
+        echo "http://127.0.0.1:11434"
+    fi
 }
 
 ollama_is_available() {
+    load_ollama_env
+
     [[ -n "${OLLAMA_BASE_URL:-}" ]] && return 0
+    [[ -n "${OLLAMA_API_KEY:-}" ]] && return 0
     if [[ "${COUNCIL_DISABLE_CLI_DISCOVERY:-}" != "1" ]]; then
         command -v ollama >/dev/null 2>&1 && return 0
         command -v ollama.exe >/dev/null 2>&1 && return 0
@@ -132,11 +192,38 @@ ollama_is_available() {
 
     local base
     for base in $(ollama_candidate_base_urls); do
-        if curl -fsS --max-time 1 "${base%/}/api/tags" >/dev/null 2>&1; then
+        local curl_args=(-fsS --max-time 1)
+        if [[ -n "${OLLAMA_API_KEY:-}" ]]; then
+            curl_args+=(-H "Authorization: Bearer ${OLLAMA_API_KEY}")
+        fi
+        if curl "${curl_args[@]}" "${base%/}/api/tags" >/dev/null 2>&1; then
             return 0
         fi
     done
     return 1
+}
+
+ollama_default_model() {
+    load_ollama_env
+
+    if [[ -n "${OLLAMA_MODEL:-}" ]]; then
+        echo "$OLLAMA_MODEL"
+        return
+    fi
+
+    local base="${1:-${OLLAMA_BASE_URL:-}}"
+    if [[ -z "$base" && -n "${OLLAMA_API_KEY:-}" ]]; then
+        base="https://ollama.com"
+    fi
+
+    case "${base%/}" in
+        https://ollama.com|https://www.ollama.com)
+            echo "glm-5.2"
+            ;;
+        *)
+            echo "glm-5.2:cloud"
+            ;;
+    esac
 }
 
 # Default model per provider. CLI defaults mirror what the CLI itself picks
@@ -150,7 +237,7 @@ get_model() {
         openai)     echo "${OPENAI_MODEL:-gpt-5.5-pro}" ;;
         grok)       echo "${GROK_MODEL:-grok-4.20-reasoning}" ;;
         nvidia)     echo "${NVIDIA_MODEL:-nvidia/llama-3.3-nemotron-super-49b-v1.5}" ;;
-        ollama)     echo "${OLLAMA_MODEL:-qwen2.5-coder:7b}" ;;
+        ollama)     ollama_default_model ;;
         perplexity) echo "${PERPLEXITY_MODEL:-sonar-reasoning-pro}" ;;
         codex)      echo "${CODEX_MODEL:-gpt-5.5}" ;;
         gemini-cli) echo "${GEMINI_CLI_MODEL:-gemini-3-flash-preview}" ;;

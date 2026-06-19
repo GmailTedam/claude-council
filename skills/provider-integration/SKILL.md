@@ -29,7 +29,7 @@ Each provider is a shell script in `scripts/providers/` that:
 | OpenAI | `OPENAI_API_KEY` | gpt-5.5-pro |
 | Grok | `XAI_API_KEY` (or `GROK_API_KEY`) | grok-4.20-reasoning |
 | NVIDIA NIM | `NVIDIA_API_KEY` (or `NVIDIA_BUILD_API_KEY`) | nvidia/llama-3.3-nemotron-super-49b-v1.5 |
-| Ollama | none for local; optional `OLLAMA_API_KEY` for authenticated endpoints | qwen2.5-coder:7b |
+| Ollama | none for local; optional `OLLAMA_API_KEY` for authenticated endpoints | glm-5.2 / glm-5.2:cloud |
 | Perplexity | `PERPLEXITY_API_KEY` | sonar-reasoning-pro |
 
 ## NVIDIA NIM Notes
@@ -52,15 +52,23 @@ specific hosted provider path.
 
 ## Ollama / AirLLM Local Notes
 
-Ollama is the local-provider route for AirLLM-enabled models on this workspace.
-Discover it when `ollama` is on `PATH` or `OLLAMA_BASE_URL` points at a remote
-Ollama-compatible endpoint. In WSL, the provider also probes the Windows host
-gateway and `host.docker.internal` because Windows Ollama is not always exposed
-on WSL's `127.0.0.1`. Use `OLLAMA_MODEL` to switch models.
+Ollama is the local/cloud-provider route for AirLLM-enabled models on this
+workspace. Discover it when `OLLAMA_API_KEY` is set, `ollama` is on `PATH`, or
+`OLLAMA_BASE_URL` points at a remote Ollama-compatible endpoint. With
+`OLLAMA_API_KEY` and no explicit `OLLAMA_BASE_URL`, use direct Ollama Cloud at
+`https://ollama.com`. In WSL/Git Bash on Windows, the provider also reads
+`OLLAMA_API_KEY` and `OLLAMA_PUBKEY` from the Windows process/user/machine
+environment if Bash did not inherit them. `OLLAMA_PUBKEY` is not sent as
+HTTP auth; direct cloud calls still use `OLLAMA_API_KEY` as the Bearer token.
+In WSL, the provider also probes the Windows host gateway and
+`host.docker.internal` because Windows Ollama is not always exposed on WSL's
+`127.0.0.1`. Use `OLLAMA_MODEL` to switch models.
 
-Suitable council models from the local pull set:
+Suitable council models from Ollama:
 
-- `qwen2.5-coder:7b` as the default coding reviewer.
+- `glm-5.2` as the default direct Ollama Cloud coding reviewer.
+- `glm-5.2:cloud` for the same model through a local Ollama daemon.
+- `qwen2.5-coder:7b` as a local coding reviewer.
 - `devstral-small-2:24b` for slower but stronger agentic coding review.
 - `mistral-small3.2:24b` or `gpt-oss:20b` for general architecture tradeoffs.
 - `llama3.2:1b` only for smoke tests or very fast sanity checks.

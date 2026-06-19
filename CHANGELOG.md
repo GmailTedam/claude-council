@@ -8,13 +8,17 @@ to a `YYYY.M.BUILD` versioning scheme where `BUILD` resets each month.
 
 ### Features
 
-- **Ollama local provider.** Added `scripts/providers/ollama.sh`, discovery via
-  `ollama` on `PATH` or `OLLAMA_BASE_URL`, `OLLAMA_MODEL` defaulting to
-  `qwen2.5-coder:7b`, status output, display colors, and tests.
+- **Ollama local/cloud provider.** Added `scripts/providers/ollama.sh`,
+  discovery via `OLLAMA_API_KEY`, `ollama` on `PATH`, or `OLLAMA_BASE_URL`.
+  `OLLAMA_MODEL` now defaults to GLM-5.2: `glm-5.2` for direct Ollama Cloud and
+  `glm-5.2:cloud` through a local Ollama daemon. Status output, display colors,
+  and tests cover the provider. On Windows-hosted shells, the provider also
+  falls back to Windows process/user/machine environment scopes for
+  `OLLAMA_API_KEY` and `OLLAMA_PUBKEY` when Bash did not inherit them.
 
 ### Docs
 
-- Documented suitable local Ollama/AirLLM-backed council models and kept
+- Documented suitable Ollama/AirLLM-backed council models and kept
   embedding, OCR, vision, safety-classifier, and healthcare-specific pulls out
   of the default council set.
 

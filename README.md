@@ -349,20 +349,27 @@ If `codex` or `gemini` CLIs are installed and on `PATH`, they're discovered auto
 
 CLI providers use your existing CLI subscription: no API key, no per-call cost. To opt back into the API variant for a single call, pass it explicitly: `--providers=openai` or `--providers=gemini`. Listing both API and CLI together (e.g., `--providers=gemini,gemini-cli`) runs them side-by-side for comparison.
 
-If `ollama` is installed or `OLLAMA_BASE_URL` is set, the local `ollama`
+If `OLLAMA_API_KEY`, `ollama`, or `OLLAMA_BASE_URL` is available, the `ollama`
 provider is discovered as a separate council member. It does not shadow a
-hosted provider. In WSL, the provider also probes the Windows host gateway and
-`host.docker.internal` because Windows Ollama is not always exposed on WSL's
-`127.0.0.1`.
+hosted provider. With `OLLAMA_API_KEY` and no explicit `OLLAMA_BASE_URL`, it
+uses direct Ollama Cloud at `https://ollama.com`. In WSL/Git Bash on Windows,
+the provider also reads `OLLAMA_API_KEY` and `OLLAMA_PUBKEY` from the Windows
+process/user/machine environment if Bash did not inherit them. In WSL, the
+provider also probes the Windows host gateway and `host.docker.internal`
+because Windows Ollama is not always exposed on WSL's `127.0.0.1`.
 
 Override CLI model selection (defaults mirror what each CLI picks itself):
 
 ```bash
 export CODEX_MODEL="gpt-5-codex"                # default: gpt-5.5
 export GEMINI_CLI_MODEL="gemini-3-pro"          # default: gemini-3-flash-preview
-export OLLAMA_MODEL="qwen2.5-coder:7b"          # default
+export OLLAMA_MODEL="glm-5.2"                   # direct cloud default
 export OLLAMA_BASE_URL="http://127.0.0.1:11434" # optional remote/local endpoint
 ```
+
+`OLLAMA_PUBKEY` is loaded when present so the runtime can observe the same
+Ollama account material as the Windows environment, but the HTTP provider only
+sends `OLLAMA_API_KEY` as the Bearer token.
 
 ### Verbosity
 
@@ -396,14 +403,16 @@ export OPENAI_MODEL="gpt-5.5-pro"                   # default
 export GROK_MODEL="grok-4.20-reasoning"             # default
 export PERPLEXITY_MODEL="sonar-reasoning-pro"       # default (reasoning + search)
 export NVIDIA_MODEL="nvidia/llama-3.3-nemotron-super-49b-v1.5" # default
-export OLLAMA_MODEL="qwen2.5-coder:7b"           # default local model
+export OLLAMA_MODEL="glm-5.2"                    # default on https://ollama.com
 export ANTHROPIC_MODEL="claude-3-7-sonnet-20250219" # default
 export DEEPSEEK_MODEL="deepseek-chat"               # default
 ```
 
-Good local Ollama/AirLLM-backed council models:
+Good Ollama/AirLLM-backed council models:
 
-- `qwen2.5-coder:7b`: default coding reviewer.
+- `glm-5.2`: default direct Ollama Cloud coding reviewer.
+- `glm-5.2:cloud`: same model through a local Ollama daemon.
+- `qwen2.5-coder:7b`: local coding reviewer.
 - `devstral-small-2:24b`: slower, stronger coding and agentic review.
 - `mistral-small3.2:24b` or `gpt-oss:20b`: general architecture tradeoffs.
 - `llama3.2:1b`: smoke tests and fast sanity checks.

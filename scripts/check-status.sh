@@ -127,9 +127,12 @@ check_cli_provider() {
 
 # Check an Ollama provider by asking the local/remote HTTP API for tags.
 check_ollama_provider() {
-    local model="${OLLAMA_MODEL:-qwen2.5-coder:7b}"
+    load_ollama_env
+
     local base_url
     base_url=$(ollama_base_url)
+    local model
+    model=$(ollama_default_model "$base_url")
 
     if ! ollama_is_available; then
         echo "no_binary"
