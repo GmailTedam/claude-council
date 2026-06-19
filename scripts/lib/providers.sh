@@ -206,22 +206,25 @@ ollama_is_available() {
 ollama_default_model() {
     load_ollama_env
 
-    if [[ -n "${OLLAMA_MODEL:-}" ]]; then
-        echo "$OLLAMA_MODEL"
-        return
-    fi
-
     local base="${1:-${OLLAMA_BASE_URL:-}}"
     if [[ -z "$base" && -n "${OLLAMA_API_KEY:-}" ]]; then
         base="https://ollama.com"
     fi
+    local configured_model="${OLLAMA_MODEL:-}"
 
     case "${base%/}" in
         https://ollama.com|https://www.ollama.com)
-            echo "glm-5.2"
+            case "$configured_model" in
+                ""|qwen*|*:*) echo "glm-5.2" ;;
+                *)            echo "$configured_model" ;;
+            esac
             ;;
         *)
-            echo "glm-5.2:cloud"
+            if [[ -n "$configured_model" ]]; then
+                echo "$configured_model"
+            else
+                echo "glm-5.2:cloud"
+            fi
             ;;
     esac
 }

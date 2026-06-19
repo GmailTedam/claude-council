@@ -6,6 +6,8 @@ to a `YYYY.M.BUILD` versioning scheme where `BUILD` resets each month.
 
 ## Unreleased
 
+## 2026.6.2
+
 ### Features
 
 - **Ollama local/cloud provider.** Added `scripts/providers/ollama.sh`,
@@ -15,6 +17,13 @@ to a `YYYY.M.BUILD` versioning scheme where `BUILD` resets each month.
   and tests cover the provider. On Windows-hosted shells, the provider also
   falls back to Windows process/user/machine environment scopes for
   `OLLAMA_API_KEY` and `OLLAMA_PUBKEY` when Bash did not inherit them.
+
+### Fixes
+
+- **Ollama Cloud ignores stale local model pins.** Direct Ollama Cloud now
+  falls back to `glm-5.2` when `OLLAMA_MODEL` is empty, a local tag such as
+  `qwen2.5-coder:7b`, or any colon-qualified tag. Local and remote daemon
+  endpoints still honor explicit `OLLAMA_MODEL` values.
 
 ### Docs
 
