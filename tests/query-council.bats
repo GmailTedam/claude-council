@@ -13,8 +13,12 @@ setup() {
     # since keys.sh's resolve_grok_key copies it to GROK_API_KEY automatically.
     unset GEMINI_API_KEY OPENAI_API_KEY GROK_API_KEY XAI_API_KEY PERPLEXITY_API_KEY
     unset ANTHROPIC_API_KEY DEEPSEEK_API_KEY NVIDIA_API_KEY NVIDIA_BUILD_API_KEY
-    unset OLLAMA_BASE_URL
+    unset OLLAMA_BASE_URL OLLAMA_API_KEY OLLAMA_PUBKEY
     export COUNCIL_DISABLE_OLLAMA_HTTP_DISCOVERY=1
+    # On Windows-hosted shells, load_ollama_env re-reads OLLAMA_API_KEY/PUBKEY
+    # from the User/Machine environment via PowerShell. The "no providers" tests
+    # keep PATH intact, so disable that fallback or ollama is discovered anyway.
+    export COUNCIL_DISABLE_WINDOWS_ENV_FALLBACK=1
     # Disable binary-backed discovery so arg-parsing tests do not make real
     # local calls. Keep PATH intact because required tools can share directories
     # with local provider CLIs on developer machines.
