@@ -98,6 +98,49 @@ source_lib_and_call() {
     [[ "$output" == *"ollama"* ]]
 }
 
+@test "discover_providers: includes ollama-gemma4 when OLLAMA_API_KEY is set" {
+    run bash -c "
+        set -euo pipefail
+        export PATH=/usr/bin:/bin
+        export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
+        export OLLAMA_API_KEY='test-key'
+        export COUNCIL_DISABLE_OLLAMA_HTTP_DISCOVERY=1
+        source '${PROVIDERS_LIB}'
+        discover_providers
+    "
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ollama-gemma4"* ]]
+}
+
+@test "discover_providers: includes ollama-kimi when OLLAMA_API_KEY is set" {
+    run bash -c "
+        set -euo pipefail
+        export PATH=/usr/bin:/bin
+        export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
+        export OLLAMA_API_KEY='test-key'
+        export COUNCIL_DISABLE_OLLAMA_HTTP_DISCOVERY=1
+        source '${PROVIDERS_LIB}'
+        discover_providers
+    "
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ollama-kimi"* ]]
+}
+
+@test "discover_providers: excludes medgemma even when MEDGEMMA_API_KEY is set (opt-in only)" {
+    run bash -c "
+        set -euo pipefail
+        export PATH=/usr/bin:/bin
+        export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
+        export MEDGEMMA_API_KEY='test-key'
+        export MEDGEMMA_BASE_URL='https://example.invalid/v1'
+        export COUNCIL_DISABLE_OLLAMA_HTTP_DISCOVERY=1
+        source '${PROVIDERS_LIB}'
+        discover_providers
+    "
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"medgemma"* ]]
+}
+
 @test "discover_providers: includes ollama from Windows user env fallback" {
     local fake_bin="${TEST_TMP_DIR}/fake-bin"
     mkdir -p "$fake_bin"
@@ -286,6 +329,97 @@ EOF
     "
     [ "$status" -eq 0 ]
     [[ "$output" == "devstral-small-2:24b" ]]
+}
+
+@test "get_model: ollama-gemma4 defaults to gemma4:31b and respects override" {
+    run source_lib_and_call 'get_model ollama-gemma4'
+    [ "$status" -eq 0 ]
+    [[ "$output" == "gemma4:31b" ]]
+
+    run bash -c "
+        set -euo pipefail
+        export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
+        export OLLAMA_GEMMA4_MODEL='gemma4:custom'
+        source '${PROVIDERS_LIB}'
+        get_model ollama-gemma4
+    "
+    [ "$status" -eq 0 ]
+    [[ "$output" == "gemma4:custom" ]]
+}
+
+@test "get_model: ollama-kimi defaults to kimi-k2.7-code and respects override" {
+    run source_lib_and_call 'get_model ollama-kimi'
+    [ "$status" -eq 0 ]
+    [[ "$output" == "kimi-k2.7-code" ]]
+
+    run bash -c "
+        set -euo pipefail
+        export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
+        export OLLAMA_KIMI_MODEL='kimi-custom'
+        source '${PROVIDERS_LIB}'
+        get_model ollama-kimi
+    "
+    [ "$status" -eq 0 ]
+    [[ "$output" == "kimi-custom" ]]
+}
+
+@test "get_model: medgemma defaults to medgemma-27b-text-it and respects MEDGEMMA_MODEL" {
+    run source_lib_and_call 'get_model medgemma'
+    [ "$status" -eq 0 ]
+    [[ "$output" == "medgemma-27b-text-it" ]]
+
+    run bash -c "
+        set -euo pipefail
+        export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
+        export MEDGEMMA_MODEL='medgemma-4b-it'
+        source '${PROVIDERS_LIB}'
+        get_model medgemma
+    "
+    [ "$status" -eq 0 ]
+    [[ "$output" == "medgemma-4b-it" ]]
+}
+
+@test "medgemma.sh: errors clearly when no token is configured" {
+    run bash -c "
+        set -euo pipefail
+        unset MEDGEMMA_API_KEY MEDGEMMA_BASE_URL HF_TOKEN HUGGINGFACEHUB_API_TOKEN HUGGING_FACE_HUB_TOKEN HF_ACCESS_TOKEN
+        '${PROVIDERS_DIR_REAL}/medgemma.sh' 'test prompt'
+    "
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"no endpoint token found"* ]]
+}
+
+@test "medgemma.sh: falls back to HF_TOKEN when MEDGEMMA_API_KEY is unset" {
+    run bash -c "
+        set -euo pipefail
+        unset MEDGEMMA_API_KEY MEDGEMMA_BASE_URL HUGGINGFACEHUB_API_TOKEN HUGGING_FACE_HUB_TOKEN HF_ACCESS_TOKEN
+        export HF_TOKEN='hf-test-token'
+        '${PROVIDERS_DIR_REAL}/medgemma.sh' 'test prompt'
+    "
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"MEDGEMMA_BASE_URL not set"* ]]
+    [[ "$output" != *"no endpoint token found"* ]]
+}
+
+@test "medgemma.sh: MEDGEMMA_AUTH=gcloud mints a Vertex token via gcloud" {
+    local fake_bin="${TEST_TMP_DIR}/fake-bin"
+    mkdir -p "$fake_bin"
+    cat > "${fake_bin}/gcloud" <<'EOF'
+#!/bin/sh
+printf 'vertex-access-token'
+EOF
+    chmod +x "${fake_bin}/gcloud"
+
+    run bash -c "
+        set -euo pipefail
+        export PATH='${fake_bin}:${PATH}'
+        export MEDGEMMA_AUTH=gcloud
+        unset MEDGEMMA_API_KEY MEDGEMMA_BASE_URL
+        '${PROVIDERS_DIR_REAL}/medgemma.sh' 'test prompt'
+    "
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"MEDGEMMA_BASE_URL not set"* ]]
+    [[ "$output" != *"gcloud"* ]]
 }
 
 # ============================================================================

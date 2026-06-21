@@ -126,13 +126,19 @@ check_cli_provider() {
 }
 
 # Check an Ollama provider by asking the local/remote HTTP API for tags.
+# Optional $1 overrides the model label (used by the Gemma 4 / Kimi members).
 check_ollama_provider() {
     load_ollama_env
 
+    local model_override="${1:-}"
     local base_url
     base_url=$(ollama_base_url)
     local model
-    model=$(ollama_default_model "$base_url")
+    if [[ -n "$model_override" ]]; then
+        model="$model_override"
+    else
+        model=$(ollama_default_model "$base_url")
+    fi
 
     if ! ollama_is_available; then
         echo "no_binary"
@@ -178,6 +184,8 @@ openai_status=$(check_provider "openai" "OPENAI_API_KEY" "OPENAI_MODEL" "gpt-5.5
 grok_status=$(check_provider "grok" "GROK_API_KEY" "GROK_MODEL" "grok-4.20-reasoning")
 nvidia_status=$(check_provider "nvidia" "NVIDIA_API_KEY" "NVIDIA_MODEL" "nvidia/llama-3.3-nemotron-super-49b-v1.5")
 ollama_status=$(check_ollama_provider)
+ollama_gemma4_status=$(check_ollama_provider "$(ollama_gemma4_model)")
+ollama_kimi_status=$(check_ollama_provider "$(ollama_kimi_model)")
 perplexity_status=$(check_provider "perplexity" "PERPLEXITY_API_KEY" "PERPLEXITY_MODEL" "sonar-reasoning-pro")
 codex_status=$(check_cli_provider "codex" "codex")
 gemini_cli_status=$(check_cli_provider "gemini-cli" "gemini")
@@ -234,6 +242,8 @@ format_status "$(provider_emoji openai)"     "$(provider_color openai)"     "Ope
 format_status "$(provider_emoji grok)"       "$(provider_color grok)"       "Grok"       "$grok_status"
 format_status "$(provider_emoji nvidia)"     "$(provider_color nvidia)"     "NVIDIA"     "$nvidia_status"
 format_status "$(provider_emoji ollama)"     "$(provider_color ollama)"     "Ollama"     "$ollama_status"
+format_status "$(provider_emoji ollama-gemma4)" "$(provider_color ollama-gemma4)" "Ollama Gemma4" "$ollama_gemma4_status"
+format_status "$(provider_emoji ollama-kimi)" "$(provider_color ollama-kimi)" "Ollama Kimi" "$ollama_kimi_status"
 format_status "$(provider_emoji perplexity)" "$(provider_color perplexity)" "Perplexity" "$perplexity_status"
 format_status "$(provider_emoji codex)"      "$(provider_color codex)"      "Codex CLI"  "$codex_status"
 format_status "$(provider_emoji gemini-cli)" "$(provider_color gemini-cli)" "Gemini CLI" "$gemini_cli_status"
@@ -249,9 +259,11 @@ available=0
 [[ "$grok_status" == ok:* ]] && available=$((available + 1))
 [[ "$nvidia_status" == ok:* ]] && available=$((available + 1))
 [[ "$ollama_status" == ok:* ]] && available=$((available + 1))
+[[ "$ollama_gemma4_status" == ok:* ]] && available=$((available + 1))
+[[ "$ollama_kimi_status" == ok:* ]] && available=$((available + 1))
 [[ "$perplexity_status" == ok:* ]] && available=$((available + 1))
 [[ "$codex_status" == ok:* ]] && available=$((available + 1))
 [[ "$gemini_cli_status" == ok:* ]] && available=$((available + 1))
 
-echo -e "${DIM}${available}/10 providers available${RESET}"
+echo -e "${DIM}${available}/12 providers available${RESET}"
 echo ""

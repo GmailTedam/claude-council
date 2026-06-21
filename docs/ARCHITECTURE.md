@@ -133,7 +133,8 @@ Three flavors share the interface:
   When both an API and CLI sibling exist (codex+openai, gemini-cli+gemini),
   the orchestrator prefers the CLI by default; explicit `--providers` wins
   over the policy.
-- **Local/cloud providers** (`ollama`) - gated on `OLLAMA_API_KEY`, the
+- **Local/cloud providers** (`ollama`, `ollama-gemma4`, `ollama-kimi`) - gated on
+  `OLLAMA_API_KEY`, the
   `ollama` binary, or `OLLAMA_BASE_URL`, talk to direct Ollama Cloud or a local
   or remote Ollama-compatible endpoint. On Windows-hosted shells, the Ollama
   provider can read `OLLAMA_API_KEY` and `OLLAMA_PUBKEY` from Windows
@@ -281,7 +282,10 @@ claude-council/
 │   │   ├── perplexity.sh        # API
 │   │   ├── codex.sh             # CLI (subscription auth, shadows openai)
 │   │   ├── gemini-cli.sh        # CLI (subscription auth, shadows gemini)
-│   │   └── ollama.sh            # Local/remote Ollama HTTP provider
+│   │   ├── ollama.sh            # Local/remote Ollama HTTP provider (GLM-5.2)
+│   │   ├── ollama-gemma4.sh     # Ollama Cloud Gemma 4 member (gemma4:31b)
+│   │   ├── ollama-kimi.sh       # Ollama Cloud Kimi K2.7 Code member (kimi-k2.7-code)
+│   │   └── medgemma.sh          # Opt-in medical member (OpenAI-compatible cloud endpoint)
 │   └── lib/
 │       ├── cache.sh             # Caching utilities
 │       ├── display.sh           # Streaming tmux pane + iTerm2 lifecycle
@@ -329,8 +333,14 @@ claude-council/
 | `{PROVIDER}_MODEL` | varies | Model override (API providers) |
 | `CODEX_MODEL` | gpt-5.5 | Model passed to `codex exec -m` |
 | `GEMINI_CLI_MODEL` | gemini-3-flash-preview | Model passed to `gemini -m` |
-| `OLLAMA_MODEL` | glm-5.2 / glm-5.2:cloud | Model passed to Ollama `/api/chat` |
+| `OLLAMA_MODEL` | glm-5.2 / glm-5.2:cloud | Model passed to Ollama `/api/chat` (ollama member) |
+| `OLLAMA_GEMMA4_MODEL` | gemma4:31b | Model for the `ollama-gemma4` member |
+| `OLLAMA_KIMI_MODEL` | kimi-k2.7-code | Model for the `ollama-kimi` member |
 | `OLLAMA_BASE_URL` | https://ollama.com with `OLLAMA_API_KEY`; otherwise http://127.0.0.1:11434 | Ollama-compatible endpoint |
+| `MEDGEMMA_BASE_URL` | - | OpenAI-compatible endpoint for the opt-in `medgemma` member (see `docs/MEDGEMMA.md`) |
+| `MEDGEMMA_AUTH` | bearer | `bearer` (static token / HF_TOKEN fallback) or `gcloud` (Vertex AI OAuth) |
+| `MEDGEMMA_API_KEY` | - | Bearer token for the MedGemma endpoint (falls back to `HF_TOKEN`) |
+| `MEDGEMMA_MODEL` | medgemma-27b-text-it | Model id for the `medgemma` member |
 | `OLLAMA_PUBKEY` | - | Optional Ollama public key loaded from Windows env for account parity; not sent as API auth |
 | `COUNCIL_MAX_TOKENS` | 2048 | Max response tokens |
 | `COUNCIL_MAX_RETRIES` | 3 | Retry attempts |

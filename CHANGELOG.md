@@ -6,6 +6,74 @@ to a `YYYY.M.BUILD` versioning scheme where `BUILD` resets each month.
 
 ## Unreleased
 
+## 2026.6.3
+
+### Features
+
+- **Gemma 4 council member (`ollama-gemma4`).** Added
+  `scripts/providers/ollama-gemma4.sh`, a dedicated Ollama Cloud member running
+  Google Gemma 4 (`gemma4:31b`) so it can be queried in parallel with the
+  GLM-backed `ollama` member (`--providers=ollama,ollama-gemma4`). Discovered
+  under the same conditions as `ollama`; override the tag with
+  `OLLAMA_GEMMA4_MODEL`. Display color/emoji, `get_model`, status output, and
+  tests cover the member.
+
+  It needs its own model resolver (`ollama_gemma4_model`) because Ollama Cloud
+  serves Gemma 4 only as the colon-tagged `gemma4:31b` (bare `gemma4` 404s, and
+  there is no `gemma4:cloud` pointer), and `ollama_default_model` deliberately
+  discards colon-tagged `OLLAMA_MODEL` values on direct cloud — so selecting it
+  via `OLLAMA_MODEL` alone would silently fall back to `glm-5.2`. The GLM-5.2
+  cloud member (`ollama`, default `glm-5.2` / `glm-5.2:cloud`) was already a
+  council member and is unchanged.
+
+- **Kimi K2.7 Code council member (`ollama-kimi`).** Added
+  `scripts/providers/ollama-kimi.sh`, a dedicated Ollama Cloud member running
+  Moonshot `kimi-k2.7-code`. Discovered like `ollama`; override with
+  `OLLAMA_KIMI_MODEL`. `check-status.sh` now reports `N/12`.
+
+- **Cloud-first policy.** When a model exists both locally and on Ollama Cloud,
+  members prefer cloud (`ollama_base_url` already puts `https://ollama.com` first
+  when `OLLAMA_API_KEY` is set). The large dedicated members (`ollama-gemma4`,
+  `ollama-kimi`) are cloud-first by necessity — their full builds do not fit on a
+  typical workstation — and stay on cloud until local resources suffice.
+
+- **MedGemma medical member (`medgemma`, opt-in).** Added
+  `scripts/providers/medgemma.sh`, an OpenAI-compatible provider for Google's
+  MedGemma 4B/27B served from a Hugging Face Inference Endpoint, Vertex AI Model
+  Garden, or any vLLM/TGI endpoint (MedGemma is not on Ollama Cloud). It is
+  **never auto-discovered** into the default council (so a medical model never
+  answers general engineering queries); query it explicitly with
+  `--providers=medgemma` after setting `MEDGEMMA_BASE_URL` (token resolves
+  `MEDGEMMA_API_KEY` > `HF_TOKEN` > `HUGGINGFACEHUB_API_TOKEN` > `HF_ACCESS_TOKEN`,
+  so an existing HF token is reused for a Hugging Face endpoint; model via
+  `MEDGEMMA_MODEL`, system prompt via `MEDGEMMA_SYSTEM`). `MEDGEMMA_AUTH=gcloud`
+  mints a short-lived Vertex AI OAuth token via the gcloud CLI. Full deployment +
+  residency guide in `docs/MEDGEMMA.md`. Ships with data-residency guidance for
+  PHI (prefer a self-hosted UK/EU VPC endpoint or a single-tenant region-pinned
+  HF endpoint; never multi-tenant/US-default inference or Ollama Cloud).
+  **MedSigLIP is intentionally not a member** — it is an image/text encoder with
+  no text generation, so it cannot produce a council response.
+
+### Fixes
+
+- **`query-council.bats` was not hermetic for the "no providers" cases.** Its
+  `setup()` unset every API key except `OLLAMA_API_KEY` and did not disable the
+  Windows User/Machine env fallback, so on any host with `OLLAMA_API_KEY` set the
+  `ollama` member was discovered and `errors when no providers available` failed.
+  `setup()` now also unsets `OLLAMA_API_KEY`/`OLLAMA_PUBKEY` and sets
+  `COUNCIL_DISABLE_WINDOWS_ENV_FALLBACK=1`.
+
+### Docs
+
+- Documented `gemma4:31b` and `kimi-k2.7-code` as suitable Ollama council models,
+  the dedicated `ollama-gemma4` / `ollama-kimi` members, the cloud-first policy,
+  and the opt-in MedGemma member (plus the MedSigLIP exclusion) across the
+  provider-integration skill, README, and ARCHITECTURE; added
+  `OLLAMA_GEMMA4_MODEL`, `OLLAMA_KIMI_MODEL`, and `MEDGEMMA_*` to the
+  configuration references; new `docs/MEDGEMMA.md` deployment guide.
+- Corrected the stale `cli-providers.bats` test count in TESTING.md (22 → 37;
+  it had not been updated when 2026.6.2 added the Ollama tests).
+
 ## 2026.6.2
 
 ### Features

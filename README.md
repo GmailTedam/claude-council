@@ -350,9 +350,27 @@ If `codex` or `gemini` CLIs are installed and on `PATH`, they're discovered auto
 CLI providers use your existing CLI subscription: no API key, no per-call cost. To opt back into the API variant for a single call, pass it explicitly: `--providers=openai` or `--providers=gemini`. Listing both API and CLI together (e.g., `--providers=gemini,gemini-cli`) runs them side-by-side for comparison.
 
 If `OLLAMA_API_KEY`, `ollama`, or `OLLAMA_BASE_URL` is available, the `ollama`
-provider is discovered as a separate council member. It does not shadow a
-hosted provider. With `OLLAMA_API_KEY` and no explicit `OLLAMA_BASE_URL`, it
-uses direct Ollama Cloud at `https://ollama.com`. In WSL/Git Bash on Windows,
+provider (GLM-5.2), the `ollama-gemma4` provider (Google Gemma 4, `gemma4:31b`),
+and the `ollama-kimi` provider (Moonshot Kimi K2.7 Code, `kimi-k2.7-code`) are
+discovered as separate council members and can be queried in parallel
+(`--providers=ollama,ollama-gemma4,ollama-kimi`). They do not shadow a hosted
+provider. With `OLLAMA_API_KEY` and no explicit `OLLAMA_BASE_URL`, they use
+direct Ollama Cloud at `https://ollama.com` (cloud-first: the large dedicated
+members do not fit on a typical workstation, so they always use cloud until
+local resources suffice).
+
+A medical model, **MedGemma**, is available as an opt-in member via an
+OpenAI-compatible cloud endpoint (self-hosted vLLM/TGI, Hugging Face Inference
+Endpoints, or Vertex AI). It is never auto-included in the default council; query
+it explicitly with `--providers=medgemma` after setting `MEDGEMMA_BASE_URL`
+(token: `MEDGEMMA_API_KEY`, else your existing `HF_TOKEN`; or `MEDGEMMA_AUTH=gcloud`
+for Vertex). For patient data (PHI), point it only at an endpoint in an approved
+jurisdiction — prefer a self-hosted UK/EU VPC endpoint, or a single-tenant
+region-pinned HF endpoint; do not route PHI through multi-tenant / US-default
+inference or Ollama Cloud. **Full setup + residency guide:**
+[`docs/MEDGEMMA.md`](docs/MEDGEMMA.md).
+
+In WSL/Git Bash on Windows,
 the provider also reads `OLLAMA_API_KEY` and `OLLAMA_PUBKEY` from the Windows
 process/user/machine environment if Bash did not inherit them. In WSL, the
 provider also probes the Windows host gateway and `host.docker.internal`
@@ -363,8 +381,17 @@ Override CLI model selection (defaults mirror what each CLI picks itself):
 ```bash
 export CODEX_MODEL="gpt-5-codex"                # default: gpt-5.5
 export GEMINI_CLI_MODEL="gemini-3-pro"          # default: gemini-3-flash-preview
-export OLLAMA_MODEL="glm-5.2"                   # direct cloud default
+export OLLAMA_MODEL="glm-5.2"                   # direct cloud default (ollama member)
+export OLLAMA_GEMMA4_MODEL="gemma4:31b"         # tag for the ollama-gemma4 member
+export OLLAMA_KIMI_MODEL="kimi-k2.7-code"       # tag for the ollama-kimi member
 export OLLAMA_BASE_URL="http://127.0.0.1:11434" # optional remote/local endpoint
+# MedGemma (opt-in medical member; --providers=medgemma):
+export MEDGEMMA_BASE_URL="https://<id>.endpoints.huggingface.cloud/v1"
+# Token order: MEDGEMMA_API_KEY > HF_TOKEN > HUGGINGFACEHUB_API_TOKEN > HF_ACCESS_TOKEN.
+# An existing HF_TOKEN is reused automatically for a Hugging Face endpoint;
+# set MEDGEMMA_API_KEY only for self-hosted/Vertex.
+export MEDGEMMA_API_KEY="<self-hosted or Vertex token>"  # optional on the HF path
+export MEDGEMMA_MODEL="medgemma-27b-text-it"    # or medgemma-4b-it
 ```
 
 `OLLAMA_PUBKEY` is loaded when present so the runtime can observe the same
@@ -412,6 +439,11 @@ Good Ollama/AirLLM-backed council models:
 
 - `glm-5.2`: default direct Ollama Cloud coding reviewer.
 - `glm-5.2:cloud`: same model through a local Ollama daemon.
+- `gemma4:31b`: Google Gemma 4 on Ollama Cloud — available as the dedicated
+  `ollama-gemma4` member (queryable alongside `ollama`). Override its tag with
+  `OLLAMA_GEMMA4_MODEL`.
+- `kimi-k2.7-code`: Moonshot Kimi K2.7 Code on Ollama Cloud — available as the
+  dedicated `ollama-kimi` member. Override its tag with `OLLAMA_KIMI_MODEL`.
 - `qwen2.5-coder:7b`: local coding reviewer.
 - `devstral-small-2:24b`: slower, stronger coding and agentic review.
 - `mistral-small3.2:24b` or `gpt-oss:20b`: general architecture tradeoffs.

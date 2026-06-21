@@ -26,7 +26,7 @@ discover_providers() {
                     command -v gemini >/dev/null 2>&1 && is_available=true
                 fi
                 ;;
-            ollama)
+            ollama|ollama-gemma4|ollama-kimi)
                 ollama_is_available && is_available=true
                 ;;
             anthropic)  [[ -n "${ANTHROPIC_API_KEY:-}" ]] && is_available=true ;;
@@ -35,6 +35,12 @@ discover_providers() {
             openai)     [[ -n "${OPENAI_API_KEY:-}" ]] && is_available=true ;;
             grok)       [[ -n "${GROK_API_KEY:-}" ]] && is_available=true ;;
             nvidia)     [[ -n "${NVIDIA_API_KEY:-}" || -n "${NVIDIA_BUILD_API_KEY:-}" ]] && is_available=true ;;
+            medgemma)
+                # Opt-in, domain-specific (medical) member: never auto-discovered
+                # into the default council set, even when MEDGEMMA_API_KEY is set.
+                # Run it explicitly with --providers=medgemma.
+                is_available=false
+                ;;
             *)
                 local up_var
                 up_var=$(echo "$name" | tr '[:lower:]' '[:upper:]')_API_KEY
@@ -229,6 +235,23 @@ ollama_default_model() {
     esac
 }
 
+# Model for the dedicated Gemma 4 council member (ollama-gemma4).
+# Ollama Cloud serves Gemma 4 only as the colon-tagged `gemma4:31b` (bare
+# `gemma4` 404s, and there is no `gemma4:cloud` pointer). ollama_default_model()
+# discards colon-tagged values on direct cloud, so Gemma 4 needs its own
+# resolver to keep the `:31b` tag. Override with OLLAMA_GEMMA4_MODEL.
+ollama_gemma4_model() {
+    echo "${OLLAMA_GEMMA4_MODEL:-gemma4:31b}"
+}
+
+# Model for the dedicated Kimi council member (ollama-kimi).
+# Moonshot's Kimi K2.7 Code is served on Ollama Cloud as `kimi-k2.7-code`;
+# there is no workstation-sized local build, so this member is cloud-first.
+# Override with OLLAMA_KIMI_MODEL.
+ollama_kimi_model() {
+    echo "${OLLAMA_KIMI_MODEL:-kimi-k2.7-code}"
+}
+
 # Default model per provider. CLI defaults mirror what the CLI itself picks
 # when invoked without -m, so the cache key and pane header match what's
 # actually run. Bump when the CLI ships a new default we want to track.
@@ -240,7 +263,10 @@ get_model() {
         openai)     echo "${OPENAI_MODEL:-gpt-5.5-pro}" ;;
         grok)       echo "${GROK_MODEL:-grok-4.20-reasoning}" ;;
         nvidia)     echo "${NVIDIA_MODEL:-nvidia/llama-3.3-nemotron-super-49b-v1.5}" ;;
-        ollama)     ollama_default_model ;;
+        ollama)        ollama_default_model ;;
+        ollama-gemma4) ollama_gemma4_model ;;
+        ollama-kimi)   ollama_kimi_model ;;
+        medgemma)   echo "${MEDGEMMA_MODEL:-medgemma-27b-text-it}" ;;
         perplexity) echo "${PERPLEXITY_MODEL:-sonar-reasoning-pro}" ;;
         codex)      echo "${CODEX_MODEL:-gpt-5.5}" ;;
         gemini-cli) echo "${GEMINI_CLI_MODEL:-gemini-3-flash-preview}" ;;
@@ -259,7 +285,8 @@ provider_color() {
         openai|codex)      echo -e "${WHITE}" ;;
         grok)              echo -e "${RED}" ;;
         nvidia)            echo -e "${GREEN}" ;;
-        ollama)            echo -e "${CYAN}" ;;
+        ollama|ollama-gemma4|ollama-kimi) echo -e "${CYAN}" ;;
+        medgemma)          echo -e "${GREEN}" ;;
         perplexity)        echo -e "${GREEN}" ;;
         *)                 echo -e "${CYAN}" ;;
     esac
@@ -267,10 +294,11 @@ provider_color() {
 
 # Vendor emoji for a provider name. Same grouping as provider_color.
 provider_emoji() {
-    if [[ "$1" == "ollama" ]]; then
-        echo "[O]"
-        return
-    fi
+    case "$1" in
+        ollama)        echo "[O]"; return ;;
+        ollama-gemma4) echo "[G]"; return ;;
+        ollama-kimi)   echo "[K]"; return ;;
+    esac
 
     case "$1" in
         anthropic)         echo "🟪" ;;
@@ -279,6 +307,7 @@ provider_emoji() {
         openai|codex)      echo "🔳" ;;
         grok)              echo "🟥" ;;
         nvidia)            echo "🟩" ;;
+        medgemma)          echo "🩺" ;;
         perplexity)        echo "🟩" ;;
         *)                 echo "⬛" ;;
     esac
