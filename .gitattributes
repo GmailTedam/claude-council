@@ -1,0 +1,11 @@
+# Normalize line endings: store text as LF in the repo and check out as LF on
+# every platform. This repo is bash-script-heavy (providers, tests), where CRLF
+# can break execution, and the prior mixed CRLF/LF state caused spurious EOL
+# churn in diffs whenever a Unix-style editor touched a CRLF file.
+* text=auto eol=lf
+
+# Be explicit for the executable/text types we ship.
+*.sh   text eol=lf
+*.bats text eol=lf
+*.md   text eol=lf
+*.json text eol=lf
