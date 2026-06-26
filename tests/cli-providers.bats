@@ -364,7 +364,13 @@ EOF
 }
 
 @test "get_model: medgemma defaults to medgemma-27b-text-it and respects MEDGEMMA_MODEL" {
-    run source_lib_and_call 'get_model medgemma'
+    run bash -c "
+        set -euo pipefail
+        export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
+        unset MEDGEMMA_MODEL
+        source '${PROVIDERS_LIB}'
+        get_model medgemma
+    "
     [ "$status" -eq 0 ]
     [[ "$output" == "medgemma-27b-text-it" ]]
 

@@ -35,6 +35,11 @@ discover_providers() {
             openai)     [[ -n "${OPENAI_API_KEY:-}" ]] && is_available=true ;;
             grok)       [[ -n "${GROK_API_KEY:-}" ]] && is_available=true ;;
             nvidia)     [[ -n "${NVIDIA_API_KEY:-}" || -n "${NVIDIA_BUILD_API_KEY:-}" ]] && is_available=true ;;
+            zai)
+                # Canonicalise Z_AI_API_KEY -> ZAI_API_KEY (incl. Windows User-scope
+                # fallback) when keys.sh is sourced, then gate on the result.
+                command -v resolve_zai_key >/dev/null 2>&1 && resolve_zai_key
+                [[ -n "${ZAI_API_KEY:-}" || -n "${Z_AI_API_KEY:-}" ]] && is_available=true ;;
             medgemma)
                 # Opt-in, domain-specific (medical) member: never auto-discovered
                 # into the default council set, even when MEDGEMMA_API_KEY is set.
@@ -263,6 +268,7 @@ get_model() {
         openai)     echo "${OPENAI_MODEL:-gpt-5.5-pro}" ;;
         grok)       echo "${GROK_MODEL:-grok-4.20-reasoning}" ;;
         nvidia)     echo "${NVIDIA_MODEL:-nvidia/llama-3.3-nemotron-super-49b-v1.5}" ;;
+        zai)        echo "${ZAI_MODEL:-glm-4.6}" ;;
         ollama)        ollama_default_model ;;
         ollama-gemma4) ollama_gemma4_model ;;
         ollama-kimi)   ollama_kimi_model ;;
@@ -285,6 +291,7 @@ provider_color() {
         openai|codex)      echo -e "${WHITE}" ;;
         grok)              echo -e "${RED}" ;;
         nvidia)            echo -e "${GREEN}" ;;
+        zai)               echo -e "${YELLOW}" ;;
         ollama|ollama-gemma4|ollama-kimi) echo -e "${CYAN}" ;;
         medgemma)          echo -e "${GREEN}" ;;
         perplexity)        echo -e "${GREEN}" ;;
@@ -307,6 +314,7 @@ provider_emoji() {
         openai|codex)      echo "🔳" ;;
         grok)              echo "🟥" ;;
         nvidia)            echo "🟩" ;;
+        zai)               echo "🟧" ;;
         medgemma)          echo "🩺" ;;
         perplexity)        echo "🟩" ;;
         *)                 echo "⬛" ;;

@@ -15,6 +15,7 @@ source "${SCRIPT_DIR}/lib/display.sh"
 source "${SCRIPT_DIR}/lib/verbosity.sh"
 resolve_grok_key
 resolve_nvidia_key
+resolve_zai_key
 
 # Helper: current time in milliseconds (falls back to seconds if python3 missing)
 now_ms() {
@@ -180,7 +181,7 @@ if [[ "$LIST_AVAILABLE" == true ]]; then
     read -ra DISCOVERED <<< "$(discover_providers)"
     if [[ ${#DISCOVERED[@]} -eq 0 ]]; then
         echo "No providers configured."
-        echo "  Set an API key (ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, XAI_API_KEY/GROK_API_KEY, PERPLEXITY_API_KEY, or NVIDIA_API_KEY/NVIDIA_BUILD_API_KEY)"
+        echo "  Set an API key (ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, XAI_API_KEY/GROK_API_KEY, PERPLEXITY_API_KEY, NVIDIA_API_KEY/NVIDIA_BUILD_API_KEY, or Z_AI_API_KEY)"
         echo "  or install/configure a local CLI agent (codex, gemini, ollama)."
         exit 0
     fi
