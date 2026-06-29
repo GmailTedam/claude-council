@@ -351,13 +351,15 @@ CLI providers use your existing CLI subscription: no API key, no per-call cost. 
 
 If `OLLAMA_API_KEY`, `ollama`, or `OLLAMA_BASE_URL` is available, the `ollama`
 provider (GLM-5.2), the `ollama-gemma4` provider (Google Gemma 4, `gemma4:31b`),
-and the `ollama-kimi` provider (Moonshot Kimi K2.7 Code, `kimi-k2.7-code`) are
-discovered as separate council members and can be queried in parallel
-(`--providers=ollama,ollama-gemma4,ollama-kimi`). They do not shadow a hosted
+the `ollama-kimi` provider (Moonshot Kimi K2.7 Code, `kimi-k2.7-code`), and the
+`ollama-ornith` provider (Ornith, `ornith`) are discovered as separate council
+members and can be queried in parallel
+(`--providers=ollama,ollama-gemma4,ollama-kimi,ollama-ornith`). They do not shadow a hosted
 provider. With `OLLAMA_API_KEY` and no explicit `OLLAMA_BASE_URL`, they use
 direct Ollama Cloud at `https://ollama.com` (cloud-first: the large dedicated
 members do not fit on a typical workstation, so they always use cloud until
-local resources suffice).
+local resources suffice). `ollama-ornith` is local-first when the pulled
+`ornith` tag is available, then falls back to Ollama Cloud.
 
 A medical model, **MedGemma**, is available as an opt-in member via an
 OpenAI-compatible cloud endpoint (self-hosted vLLM/TGI, Hugging Face Inference
@@ -384,6 +386,8 @@ export GEMINI_CLI_MODEL="gemini-3-pro"          # default: gemini-3-flash-previe
 export OLLAMA_MODEL="glm-5.2"                   # direct cloud default (ollama member)
 export OLLAMA_GEMMA4_MODEL="gemma4:31b"         # tag for the ollama-gemma4 member
 export OLLAMA_KIMI_MODEL="kimi-k2.7-code"       # tag for the ollama-kimi member
+export OLLAMA_ORNITH_MODEL="ornith"             # tag for the ollama-ornith member
+export OLLAMA_ORNITH_BASE_URL="http://127.0.0.1:11434" # optional ornith endpoint
 export OLLAMA_BASE_URL="http://127.0.0.1:11434" # optional remote/local endpoint
 # MedGemma (opt-in medical member; --providers=medgemma):
 export MEDGEMMA_BASE_URL="https://<id>.endpoints.huggingface.cloud/v1"
@@ -444,6 +448,8 @@ Good Ollama/AirLLM-backed council models:
   `OLLAMA_GEMMA4_MODEL`.
 - `kimi-k2.7-code`: Moonshot Kimi K2.7 Code on Ollama Cloud — available as the
   dedicated `ollama-kimi` member. Override its tag with `OLLAMA_KIMI_MODEL`.
+- `ornith`: local-first Ornith coding model, available as the dedicated
+  `ollama-ornith` member. Override its tag with `OLLAMA_ORNITH_MODEL`.
 - `qwen2.5-coder:7b`: local coding reviewer.
 - `devstral-small-2:24b`: slower, stronger coding and agentic review.
 - `mistral-small3.2:24b` or `gpt-oss:20b`: general architecture tradeoffs.

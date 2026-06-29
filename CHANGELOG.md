@@ -6,6 +6,13 @@ to a `YYYY.M.BUILD` versioning scheme where `BUILD` resets each month.
 
 ## Unreleased
 
+- **Ornith council member (`ollama-ornith`).** Added
+  `scripts/providers/ollama-ornith.sh`, a dedicated Ollama member running
+  `ornith`. It prefers a local daemon with the pulled `ornith` tag, then falls
+  back to Ollama Cloud when no local Ornith model is available. Override with
+  `OLLAMA_ORNITH_MODEL` or `OLLAMA_ORNITH_BASE_URL`. Status output now includes
+  `Ollama Ornith`; provider metadata and model resolver tests cover the member.
+
 ## 2026.6.3
 
 ### Features

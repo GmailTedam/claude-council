@@ -85,3 +85,21 @@ curl_with_retry() {
     echo "$response"
     return 0
 }
+
+# POST a JSON body safely, then retry like curl_with_retry.
+# Passing JSON through `-d "$PAYLOAD"` can be corrupted by Windows/MSYS argv
+# handling when the payload contains non-ASCII text. Writing the body to a temp
+# file and sending it with `--data-binary @file` avoids argv encoding issues and
+# keeps retries using the same request body.
+# Usage: curl_json_with_retry "$PAYLOAD" [curl_args...]   # do not include -d
+curl_json_with_retry() {
+    local payload="$1"
+    shift
+    local body_file
+    body_file=$(mktemp)
+    printf '%s' "$payload" > "$body_file"
+    curl_with_retry "$@" --data-binary @"$body_file"
+    local rc=$?
+    rm -f "$body_file"
+    return $rc
+}

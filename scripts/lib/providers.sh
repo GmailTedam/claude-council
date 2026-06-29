@@ -29,6 +29,9 @@ discover_providers() {
             ollama|ollama-gemma4|ollama-kimi)
                 ollama_is_available && is_available=true
                 ;;
+            ollama-ornith)
+                ollama_ornith_is_available && is_available=true
+                ;;
             anthropic)  [[ -n "${ANTHROPIC_API_KEY:-}" ]] && is_available=true ;;
             deepseek)   [[ -n "${DEEPSEEK_API_KEY:-}" ]] && is_available=true ;;
             gemini)     [[ -n "${GEMINI_API_KEY:-}" ]] && is_available=true ;;
@@ -166,6 +169,45 @@ ollama_candidate_base_urls() {
     echo "http://host.docker.internal:11434"
 }
 
+ollama_local_candidate_base_urls() {
+    if [[ -n "${OLLAMA_BASE_URL:-}" ]]; then
+        case "${OLLAMA_BASE_URL%/}" in
+            https://ollama.com|https://www.ollama.com) ;;
+            *) echo "${OLLAMA_BASE_URL%/}" ;;
+        esac
+        return
+    fi
+
+    echo "http://127.0.0.1:11434"
+
+    local gateway=""
+    if command -v ip >/dev/null 2>&1; then
+        gateway=$(ip route 2>/dev/null | awk '/^default / { print $3; exit }')
+    fi
+    [[ -n "$gateway" ]] && echo "http://${gateway}:11434"
+
+    echo "http://host.docker.internal:11434"
+}
+
+ollama_model_exists_at() {
+    local base="$1"
+    local model="$2"
+    local headers=()
+
+    case "${base%/}" in
+        https://ollama.com|https://www.ollama.com)
+            [[ -n "${OLLAMA_API_KEY:-}" ]] && headers=(-H "Authorization: Bearer ${OLLAMA_API_KEY}")
+            ;;
+    esac
+
+    local tags
+    tags=$(curl -fsS --max-time 2 "${headers[@]}" "${base%/}/api/tags" 2>/dev/null) || return 1
+
+    echo "$tags" | jq -e --arg model "$model" '
+        (.models // []) | any(.name == $model or .name == ($model + ":latest"))
+    ' >/dev/null
+}
+
 ollama_base_url() {
     load_ollama_env
 
@@ -257,6 +299,64 @@ ollama_kimi_model() {
     echo "${OLLAMA_KIMI_MODEL:-kimi-k2.7-code}"
 }
 
+# Model/base resolver for the dedicated Ornith council member.
+# Prefer the pulled local model; fall back to Ollama Cloud only when no local
+# Ornith tag is available. Override with OLLAMA_ORNITH_MODEL or
+# OLLAMA_ORNITH_BASE_URL.
+ollama_ornith_model() {
+    echo "${OLLAMA_ORNITH_MODEL:-ornith}"
+}
+
+ollama_ornith_base_url() {
+    load_ollama_env
+
+    if [[ -n "${OLLAMA_ORNITH_BASE_URL:-}" ]]; then
+        echo "${OLLAMA_ORNITH_BASE_URL%/}"
+        return
+    fi
+
+    local model
+    model=$(ollama_ornith_model)
+
+    local base
+    for base in $(ollama_local_candidate_base_urls); do
+        if ollama_model_exists_at "$base" "$model"; then
+            echo "${base%/}"
+            return
+        fi
+    done
+
+    if [[ -n "${OLLAMA_API_KEY:-}" ]] && ollama_model_exists_at "https://ollama.com" "$model"; then
+        echo "https://ollama.com"
+        return
+    fi
+
+    if [[ -n "${OLLAMA_BASE_URL:-}" ]]; then
+        echo "${OLLAMA_BASE_URL%/}"
+    elif [[ -n "${OLLAMA_API_KEY:-}" ]]; then
+        echo "https://ollama.com"
+    else
+        echo "http://127.0.0.1:11434"
+    fi
+}
+
+ollama_ornith_is_available() {
+    load_ollama_env
+
+    [[ -n "${OLLAMA_ORNITH_BASE_URL:-}" ]] && return 0
+
+    local model
+    model=$(ollama_ornith_model)
+
+    local base
+    for base in $(ollama_local_candidate_base_urls); do
+        ollama_model_exists_at "$base" "$model" && return 0
+    done
+
+    [[ -n "${OLLAMA_API_KEY:-}" ]] && ollama_model_exists_at "https://ollama.com" "$model" && return 0
+    return 1
+}
+
 # Default model per provider. CLI defaults mirror what the CLI itself picks
 # when invoked without -m, so the cache key and pane header match what's
 # actually run. Bump when the CLI ships a new default we want to track.
@@ -272,6 +372,7 @@ get_model() {
         ollama)        ollama_default_model ;;
         ollama-gemma4) ollama_gemma4_model ;;
         ollama-kimi)   ollama_kimi_model ;;
+        ollama-ornith) ollama_ornith_model ;;
         medgemma)   echo "${MEDGEMMA_MODEL:-medgemma-27b-text-it}" ;;
         perplexity) echo "${PERPLEXITY_MODEL:-sonar-reasoning-pro}" ;;
         codex)      echo "${CODEX_MODEL:-gpt-5.5}" ;;
@@ -292,7 +393,7 @@ provider_color() {
         grok)              echo -e "${RED}" ;;
         nvidia)            echo -e "${GREEN}" ;;
         zai)               echo -e "${YELLOW}" ;;
-        ollama|ollama-gemma4|ollama-kimi) echo -e "${CYAN}" ;;
+        ollama|ollama-gemma4|ollama-kimi|ollama-ornith) echo -e "${CYAN}" ;;
         medgemma)          echo -e "${GREEN}" ;;
         perplexity)        echo -e "${GREEN}" ;;
         *)                 echo -e "${CYAN}" ;;
@@ -305,6 +406,7 @@ provider_emoji() {
         ollama)        echo "[O]"; return ;;
         ollama-gemma4) echo "[G]"; return ;;
         ollama-kimi)   echo "[K]"; return ;;
+        ollama-ornith) echo "[N]"; return ;;
     esac
 
     case "$1" in
