@@ -56,7 +56,7 @@ if [[ -n "${OLLAMA_API_KEY:-}" ]]; then
 fi
 
 RESPONSE=$(curl_with_retry -s -X POST "$ENDPOINT" "${HEADERS[@]}" -d "$PAYLOAD")
-TEXT=$(echo "$RESPONSE" | jq -r '.message.content // .response // empty')
+TEXT=$(echo "$RESPONSE" | jq -r '.message.content // .message.thinking // .response // empty')
 
 if [[ -z "$TEXT" ]]; then
     ERROR=$(echo "$RESPONSE" | jq -r '.error // empty')

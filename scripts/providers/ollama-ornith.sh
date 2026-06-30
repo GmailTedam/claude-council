@@ -65,7 +65,7 @@ case "${BASE_URL%/}" in
 esac
 
 RESPONSE=$(curl_json_with_retry "$PAYLOAD" -s -X POST "$ENDPOINT" "${HEADERS[@]}")
-TEXT=$(echo "$RESPONSE" | jq -r '.message.content // .response // empty')
+TEXT=$(echo "$RESPONSE" | jq -r '.message.content // .message.thinking // .response // empty')
 
 if [[ -z "$TEXT" ]]; then
     ERROR=$(echo "$RESPONSE" | jq -r '.error // empty')
