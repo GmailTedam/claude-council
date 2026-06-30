@@ -304,8 +304,8 @@ query_provider() {
         local cached_response
         cached_response=$(cache_get "$key")
         if [[ -n "$cached_response" ]]; then
-            jq -n --arg r "$cached_response" --arg role "$role" \
-                '{status: "success", response: $r, cached: true, role: (if $role == "" then null else $role end)}' > "$output_file"
+            printf '%s' "$cached_response" | jq -Rs --arg role "$role" \
+                '{status: "success", response: ., cached: true, role: (if $role == "" then null else $role end)}' > "$output_file"
             if [[ -n "${COUNCIL_PANE_DIR:-}" ]]; then
                 pane_status_event "$COUNCIL_PANE_DIR" "$provider" cached "" "$model"
                 pane_response_write "$COUNCIL_PANE_DIR" "$provider" "$cached_response"
@@ -317,8 +317,8 @@ query_provider() {
     # Query provider with role-injected prompt
     if response=$("$script" "$final_prompt" 2>&1); then
         local elapsed=$(( $(now_ms) - start_ms ))
-        jq -n --arg r "$response" --arg role "$role" \
-            '{status: "success", response: $r, cached: false, role: (if $role == "" then null else $role end)}' > "$output_file"
+        printf '%s' "$response" | jq -Rs --arg role "$role" \
+            '{status: "success", response: ., cached: false, role: (if $role == "" then null else $role end)}' > "$output_file"
         if [[ -n "${COUNCIL_PANE_DIR:-}" ]]; then
             pane_status_event "$COUNCIL_PANE_DIR" "$provider" complete "$elapsed" "$model"
             pane_response_write "$COUNCIL_PANE_DIR" "$provider" "$response"
@@ -330,8 +330,8 @@ query_provider() {
             cache_set "$key" "$provider" "$model" "$final_prompt" "$response"
         fi
     else
-        jq -n --arg e "$response" --arg role "$role" \
-            '{status: "error", error: $e, cached: false, role: (if $role == "" then null else $role end)}' > "$output_file"
+        printf '%s' "$response" | jq -Rs --arg role "$role" \
+            '{status: "error", error: ., cached: false, role: (if $role == "" then null else $role end)}' > "$output_file"
         if [[ -n "${COUNCIL_PANE_DIR:-}" ]]; then
             pane_error_write "$COUNCIL_PANE_DIR" "$provider" "$response"
             pane_status_event "$COUNCIL_PANE_DIR" "$provider" error "" "$model"
@@ -445,7 +445,9 @@ for provider in "${PROVIDERS[@]}"; do
         result=$(cat "$result_file")
         # Add model to result
         result=$(echo "$result" | jq --arg m "$model" '. + {model: $m}')
-        RESULTS=$(echo "$RESULTS" | jq --arg p "$provider" --argjson r "$result" '.[$p] = $r')
+        _accf=$(mktemp); printf '%s' "$result" > "$_accf"
+        RESULTS=$(printf '%s' "$RESULTS" | jq --arg p "$provider" --slurpfile r "$_accf" '.[$p] = $r[0]')
+        rm -f "$_accf"
 
         # Track errors and show status
         status=$(echo "$result" | jq -r '.status')
@@ -508,9 +510,9 @@ if [[ "$DEBATE_MODE" == true ]]; then
             if [[ ! -x "$script" ]]; then
                 echo '{"status": "error", "error": "Script not found"}' > "$output_file"
             elif response=$("$script" "$debate_prompt" 2>&1); then
-                jq -n --arg r "$response" '{status: "success", response: $r}' > "$output_file"
+                printf '%s' "$response" | jq -Rs '{status: "success", response: .}' > "$output_file"
             else
-                jq -n --arg e "$response" '{status: "error", error: $e}' > "$output_file"
+                printf '%s' "$response" | jq -Rs '{status: "error", error: .}' > "$output_file"
             fi
         ) &
         ROUND2_PIDS+=($!)
@@ -530,7 +532,9 @@ if [[ "$DEBATE_MODE" == true ]]; then
         if [[ -f "$result_file" ]]; then
             result=$(cat "$result_file")
             result=$(echo "$result" | jq --arg m "$model" '. + {model: $m}')
-            ROUND2_RESULTS=$(echo "$ROUND2_RESULTS" | jq --arg p "$provider" --argjson r "$result" '.[$p] = $r')
+            _accf=$(mktemp); printf '%s' "$result" > "$_accf"
+            ROUND2_RESULTS=$(printf '%s' "$ROUND2_RESULTS" | jq --arg p "$provider" --slurpfile r "$_accf" '.[$p] = $r[0]')
+            rm -f "$_accf"
 
             status=$(echo "$result" | jq -r '.status')
             if [[ "$status" == "error" ]]; then
@@ -553,8 +557,9 @@ if [[ -n "$ROLES" ]]; then
 else
     ROLES_JSON="null"
 fi
+_prompt_f=$(mktemp); printf '%s' "$PROMPT" > "$_prompt_f"   # prompt+auto-context can exceed argv limit
 METADATA=$(jq -n \
-    --arg prompt "$PROMPT" \
+    --rawfile prompt "$_prompt_f" \
     --arg file_path "$FILE_PATH" \
     --argjson roles_used "$ROLES_JSON" \
     --argjson debate_mode "$DEBATE_MODE" \
@@ -572,20 +577,32 @@ METADATA=$(jq -n \
         auto_context: $auto_context,
         timestamp: $timestamp
     }')
+rm -f "$_prompt_f"
 
-# Output final JSON with metadata and results
+# Output final JSON with metadata and results.
+# Pass the large blobs (metadata + all provider responses) to jq via TEMP FILES
+# with --slurpfile, NOT command-line --argjson: on MSYS/Windows ARG_MAX is small
+# (~32KB) and the combined responses at standard/detailed verbosity overflow it,
+# producing "jq: Argument list too long" and silently dropping every response.
+_meta_f=$(mktemp); _r1_f=$(mktemp)
+printf '%s' "$METADATA" > "$_meta_f"
+printf '%s' "$RESULTS" > "$_r1_f"
 if [[ "$DEBATE_MODE" == true ]]; then
+    _r2_f=$(mktemp)
+    printf '%s' "$ROUND2_RESULTS" > "$_r2_f"
     jq -n \
-        --argjson metadata "$METADATA" \
-        --argjson round1 "$RESULTS" \
-        --argjson round2 "$ROUND2_RESULTS" \
-        '{metadata: $metadata, round1: $round1, round2: $round2}'
+        --slurpfile metadata "$_meta_f" \
+        --slurpfile round1 "$_r1_f" \
+        --slurpfile round2 "$_r2_f" \
+        '{metadata: $metadata[0], round1: $round1[0], round2: $round2[0]}'
+    rm -f "$_r2_f"
 else
     jq -n \
-        --argjson metadata "$METADATA" \
-        --argjson round1 "$RESULTS" \
-        '{metadata: $metadata, round1: $round1}'
+        --slurpfile metadata "$_meta_f" \
+        --slurpfile round1 "$_r1_f" \
+        '{metadata: $metadata[0], round1: $round1[0]}'
 fi
+rm -f "$_meta_f" "$_r1_f"
 
 # Report errors to stderr
 if [[ ${#ERRORS[@]} -gt 0 ]]; then
