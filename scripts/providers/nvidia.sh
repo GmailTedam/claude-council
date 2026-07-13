@@ -29,7 +29,7 @@ fi
 
 MODEL="${NVIDIA_MODEL:-nvidia/llama-3.3-nemotron-super-49b-v1.5}"
 BASE_TOKENS="${COUNCIL_MAX_TOKENS:-2048}"
-bump_for_reasoning TOKENS "$MODEL" "$BASE_TOKENS" '*reasoning*'
+bump_for_reasoning TOKENS "$MODEL" "$BASE_TOKENS" '*reasoning*' '*nemotron*'
 
 SYSTEM="${VERBOSITY_PREFIX:+$VERBOSITY_PREFIX }$BASE_SYSTEM_PROMPT"
 BASE_URL="${NVIDIA_BASE_URL:-https://integrate.api.nvidia.com/v1}"
@@ -55,12 +55,11 @@ if [[ -n "$DEBUG" ]]; then
     echo "Max tokens: $TOKENS" >&2
 fi
 
-RESPONSE=$(curl_with_retry -s -X POST "$ENDPOINT" \
+RESPONSE=$(curl_json_with_retry "$PAYLOAD" -s -X POST "$ENDPOINT" \
     -H "Content-Type: application/json" \
-    -H "Authorization: Bearer ${API_KEY}" \
-    -d "$PAYLOAD")
+    -H "Authorization: Bearer ${API_KEY}")
 
-TEXT=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // empty')
+TEXT=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // .choices[0].message.reasoning_content // empty')
 
 if [[ -z "$TEXT" ]]; then
     ERROR=$(echo "$RESPONSE" | jq -r '.error.message // .error // .detail // empty')
