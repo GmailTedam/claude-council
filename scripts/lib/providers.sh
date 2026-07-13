@@ -37,7 +37,7 @@ discover_providers() {
             gemini)     [[ -n "${GEMINI_API_KEY:-}" ]] && is_available=true ;;
             openai)     [[ -n "${OPENAI_API_KEY:-}" ]] && is_available=true ;;
             grok)       [[ -n "${GROK_API_KEY:-}" ]] && is_available=true ;;
-            nvidia)     [[ -n "${NVIDIA_API_KEY:-}" || -n "${NVIDIA_BUILD_API_KEY:-}" ]] && is_available=true ;;
+            nvidia|nvidia-coder) [[ -n "${NVIDIA_API_KEY:-}" || -n "${NVIDIA_BUILD_API_KEY:-}" ]] && is_available=true ;;
             zai)
                 # Canonicalise Z_AI_API_KEY -> ZAI_API_KEY (incl. Windows User-scope
                 # fallback) when keys.sh is sourced, then gate on the result.
@@ -368,6 +368,7 @@ get_model() {
         openai)     echo "${OPENAI_MODEL:-gpt-5.5-pro}" ;;
         grok)       echo "${GROK_MODEL:-grok-4.20-reasoning}" ;;
         nvidia)     echo "${NVIDIA_MODEL:-nvidia/llama-3.3-nemotron-super-49b-v1.5}" ;;
+        nvidia-coder) echo "${NVIDIA_CODER_MODEL:-meta/llama-3.1-70b-instruct}" ;;
         zai)        echo "${ZAI_MODEL:-glm-4.6}" ;;
         ollama)        ollama_default_model ;;
         ollama-gemma4) ollama_gemma4_model ;;
@@ -391,7 +392,7 @@ provider_color() {
         gemini|gemini-cli) echo -e "${BLUE}" ;;
         openai|codex)      echo -e "${WHITE}" ;;
         grok)              echo -e "${RED}" ;;
-        nvidia)            echo -e "${GREEN}" ;;
+        nvidia|nvidia-coder) echo -e "${GREEN}" ;;
         zai)               echo -e "${YELLOW}" ;;
         ollama|ollama-gemma4|ollama-kimi|ollama-ornith) echo -e "${CYAN}" ;;
         medgemma)          echo -e "${GREEN}" ;;
@@ -416,6 +417,7 @@ provider_emoji() {
         openai|codex)      echo "🔳" ;;
         grok)              echo "🟥" ;;
         nvidia)            echo "🟩" ;;
+        nvidia-coder)      echo "🟢" ;;
         zai)               echo "🟧" ;;
         medgemma)          echo "🩺" ;;
         perplexity)        echo "🟩" ;;

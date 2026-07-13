@@ -56,7 +56,7 @@ check_provider() {
                 -H "Authorization: Bearer ${api_key}" \
                 "https://api.x.ai/v1/models" 2>/dev/null || echo "000")
             ;;
-        nvidia)
+        nvidia|nvidia-coder)
             local base_url="${NVIDIA_BASE_URL:-https://integrate.api.nvidia.com/v1}"
             http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
                 -H "Authorization: Bearer ${api_key}" \
@@ -196,6 +196,7 @@ gemini_status=$(check_provider "gemini" "GEMINI_API_KEY" "GEMINI_MODEL" "gemini-
 openai_status=$(check_provider "openai" "OPENAI_API_KEY" "OPENAI_MODEL" "gpt-5.5-pro")
 grok_status=$(check_provider "grok" "GROK_API_KEY" "GROK_MODEL" "grok-4.20-reasoning")
 nvidia_status=$(check_provider "nvidia" "NVIDIA_API_KEY" "NVIDIA_MODEL" "nvidia/llama-3.3-nemotron-super-49b-v1.5")
+nvidia_coder_status=$(check_provider "nvidia-coder" "NVIDIA_API_KEY" "NVIDIA_CODER_MODEL" "meta/llama-3.1-70b-instruct")
 zai_status=$(check_provider "zai" "ZAI_API_KEY" "ZAI_MODEL" "glm-4.6")
 ollama_status=$(check_ollama_provider)
 ollama_gemma4_status=$(check_ollama_provider "$(ollama_gemma4_model)")
@@ -256,6 +257,7 @@ format_status "$(provider_emoji gemini)"     "$(provider_color gemini)"     "Gem
 format_status "$(provider_emoji openai)"     "$(provider_color openai)"     "OpenAI"     "$openai_status"
 format_status "$(provider_emoji grok)"       "$(provider_color grok)"       "Grok"       "$grok_status"
 format_status "$(provider_emoji nvidia)"     "$(provider_color nvidia)"     "NVIDIA"     "$nvidia_status"
+format_status "$(provider_emoji nvidia-coder)" "$(provider_color nvidia-coder)" "NVIDIA Coder" "$nvidia_coder_status"
 format_status "$(provider_emoji zai)"        "$(provider_color zai)"        "z.ai (GLM)" "$zai_status"
 format_status "$(provider_emoji ollama)"     "$(provider_color ollama)"     "Ollama"     "$ollama_status"
 format_status "$(provider_emoji ollama-gemma4)" "$(provider_color ollama-gemma4)" "Ollama Gemma4" "$ollama_gemma4_status"
@@ -275,6 +277,7 @@ available=0
 [[ "$openai_status" == ok:* ]] && available=$((available + 1))
 [[ "$grok_status" == ok:* ]] && available=$((available + 1))
 [[ "$nvidia_status" == ok:* ]] && available=$((available + 1))
+[[ "$nvidia_coder_status" == ok:* ]] && available=$((available + 1))
 [[ "$zai_status" == ok:* ]] && available=$((available + 1))
 [[ "$ollama_status" == ok:* ]] && available=$((available + 1))
 [[ "$ollama_gemma4_status" == ok:* ]] && available=$((available + 1))
@@ -284,5 +287,5 @@ available=0
 [[ "$codex_status" == ok:* ]] && available=$((available + 1))
 [[ "$gemini_cli_status" == ok:* ]] && available=$((available + 1))
 
-echo -e "${DIM}${available}/14 providers available${RESET}"
+echo -e "${DIM}${available}/15 providers available${RESET}"
 echo ""
