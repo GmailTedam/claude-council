@@ -66,10 +66,9 @@ if [[ "$MODEL" == codex-* ]] || [[ "$MODEL" == *-codex ]] || [[ "$MODEL" == o3-*
         echo "Reasoning effort: $EFFORT" >&2
     fi
 
-    RESPONSE=$(curl_with_retry -s -X POST "$ENDPOINT" \
+    RESPONSE=$(curl_json_with_retry "$PAYLOAD" -s -X POST "$ENDPOINT" \
         -H "Content-Type: application/json" \
-        -H "Authorization: Bearer ${API_KEY}" \
-        -d "$PAYLOAD")
+        -H "Authorization: Bearer ${API_KEY}")
 
     if [[ -n "$DEBUG" ]]; then
         echo "=== DEBUG: Response metadata ===" >&2
@@ -109,10 +108,9 @@ else
         max_completion_tokens: $tokens
     }')
 
-    RESPONSE=$(curl_with_retry -s -X POST "$ENDPOINT" \
+    RESPONSE=$(curl_json_with_retry "$PAYLOAD" -s -X POST "$ENDPOINT" \
         -H "Content-Type: application/json" \
-        -H "Authorization: Bearer ${API_KEY}" \
-        -d "$PAYLOAD")
+        -H "Authorization: Bearer ${API_KEY}")
 
     # Extract text from chat completions format
     TEXT=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // empty')
