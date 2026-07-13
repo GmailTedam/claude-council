@@ -41,10 +41,9 @@ PAYLOAD=$(jq -n --arg prompt "$PROMPT" --arg model "$MODEL" --argjson tokens "$T
     max_tokens: $tokens
 }')
 
-RESPONSE=$(curl_with_retry -s -X POST "$ENDPOINT" \
+RESPONSE=$(curl_json_with_retry "$PAYLOAD" -s -X POST "$ENDPOINT" \
     -H "Content-Type: application/json" \
-    -H "Authorization: Bearer ${API_KEY}" \
-    -d "$PAYLOAD")
+    -H "Authorization: Bearer ${API_KEY}")
 
 TEXT=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // empty')
 
