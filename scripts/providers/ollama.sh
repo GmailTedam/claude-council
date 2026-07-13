@@ -55,7 +55,7 @@ if [[ -n "${OLLAMA_API_KEY:-}" ]]; then
     HEADERS+=(-H "Authorization: Bearer ${OLLAMA_API_KEY}")
 fi
 
-RESPONSE=$(curl_with_retry -s -X POST "$ENDPOINT" "${HEADERS[@]}" -d "$PAYLOAD")
+RESPONSE=$(curl_json_with_retry "$PAYLOAD" -s -X POST "$ENDPOINT" "${HEADERS[@]}")
 TEXT=$(echo "$RESPONSE" | jq -r '.message.content // .message.thinking // .response // empty')
 
 if [[ -z "$TEXT" ]]; then
