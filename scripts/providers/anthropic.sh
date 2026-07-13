@@ -22,7 +22,7 @@ if [[ -z "$API_KEY" ]]; then
     exit 1
 fi
 
-MODEL="${ANTHROPIC_MODEL:-claude-3-7-sonnet-20250219}"
+MODEL="${ANTHROPIC_MODEL:-claude-sonnet-4-6}"
 BASE_TOKENS="${COUNCIL_MAX_TOKENS:-2048}"
 TOKENS="$BASE_TOKENS"
 
@@ -39,11 +39,10 @@ PAYLOAD=$(jq -n --arg prompt "$PROMPT" --arg model "$MODEL" --argjson tokens "$T
     max_tokens: $tokens
 }')
 
-RESPONSE=$(curl_with_retry -s -X POST "$ENDPOINT" \
+RESPONSE=$(curl_json_with_retry "$PAYLOAD" -s -X POST "$ENDPOINT" \
     -H "Content-Type: application/json" \
     -H "x-api-key: ${API_KEY}" \
-    -H "anthropic-version: 2023-06-01" \
-    -d "$PAYLOAD")
+    -H "anthropic-version: 2023-06-01")
 
 TEXT=$(echo "$RESPONSE" | jq -r '.content[0].text // empty')
 
