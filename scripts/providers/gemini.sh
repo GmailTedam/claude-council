@@ -62,10 +62,9 @@ PAYLOAD=$(jq -n --arg prompt "$PROMPT" --argjson tokens "$TOKENS" --arg system "
 }')
 
 # Make API call
-RESPONSE=$(curl_with_retry -s -X POST \
+RESPONSE=$(curl_json_with_retry "$PAYLOAD" -s -X POST \
     "${ENDPOINT}?key=${API_KEY}" \
-    -H "Content-Type: application/json" \
-    -d "$PAYLOAD")
+    -H "Content-Type: application/json")
 
 # Extract text from response
 TEXT=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
