@@ -11,6 +11,7 @@ PROVIDERS_DIR_REAL="${SCRIPTS_DIR}/providers"
 setup() {
     mkdir -p "$TEST_CACHE_DIR"
     unset GEMINI_API_KEY OPENAI_API_KEY GROK_API_KEY PERPLEXITY_API_KEY NVIDIA_API_KEY NVIDIA_BUILD_API_KEY
+    unset MOONSHOT_API_KEY KIMI_CODE_API_KEY KIMI_MODEL KIMI_BASE_URL
     unset OLLAMA_API_KEY OLLAMA_BASE_URL OLLAMA_MODEL COUNCIL_DISABLE_CLI_DISCOVERY
 }
 
@@ -277,6 +278,55 @@ EOF
     "
     [ "$status" -eq 0 ]
     [[ "$output" == *"openai"* ]]
+}
+
+@test "discover_providers: includes kimi for either supported Moonshot key" {
+    run bash -c "
+        set -euo pipefail
+        export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
+        export MOONSHOT_API_KEY='test-key'
+        source '${PROVIDERS_LIB}'
+        discover_providers
+    "
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"kimi"* ]]
+
+    run bash -c "
+        set -euo pipefail
+        export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
+        unset MOONSHOT_API_KEY
+        export KIMI_CODE_API_KEY='test-key'
+        source '${PROVIDERS_LIB}'
+        discover_providers
+    "
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"kimi"* ]]
+}
+
+@test "get_model: kimi selects the model for the configured Kimi service and respects override" {
+    run source_lib_and_call 'get_model kimi'
+    [ "$status" -eq 0 ]
+    [[ "$output" == "kimi-k2.7-code" ]]
+
+    run bash -c "
+        set -euo pipefail
+        export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
+        export KIMI_CODE_API_KEY='test-key'
+        source '${PROVIDERS_LIB}'
+        get_model kimi
+    "
+    [ "$status" -eq 0 ]
+    [[ "$output" == "k3" ]]
+
+    run bash -c "
+        set -euo pipefail
+        export PROVIDERS_DIR='${PROVIDERS_DIR_REAL}'
+        export KIMI_MODEL='kimi-k2.6'
+        source '${PROVIDERS_LIB}'
+        get_model kimi
+    "
+    [ "$status" -eq 0 ]
+    [[ "$output" == "kimi-k2.6" ]]
 }
 
 @test "discover_providers: includes nvidia when NVIDIA_API_KEY is set" {

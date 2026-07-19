@@ -76,6 +76,13 @@ check_provider() {
                 -H "Authorization: Bearer ${api_key}" \
                 "https://api.deepseek.com/models" 2>/dev/null || echo "000")
             ;;
+        kimi)
+            local base_url="${KIMI_BASE_URL:-https://api.moonshot.ai/v1}"
+            [[ "$2" == "KIMI_CODE_API_KEY" && -z "${KIMI_BASE_URL:-}" ]] && base_url="https://api.kimi.com/coding/v1"
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
+                -H "Authorization: Bearer ${api_key}" \
+                "${base_url%/}/models" 2>/dev/null || echo "000")
+            ;;
         zai)
             local base_url="${ZAI_BASE_URL:-https://api.z.ai/api/paas/v4}"
             http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
@@ -192,6 +199,13 @@ echo ""
 # Check each provider
 anthropic_status=$(check_provider "anthropic" "ANTHROPIC_API_KEY" "ANTHROPIC_MODEL" "claude-3-7-sonnet-20250219")
 deepseek_status=$(check_provider "deepseek" "DEEPSEEK_API_KEY" "DEEPSEEK_MODEL" "deepseek-chat")
+kimi_key_var="MOONSHOT_API_KEY"
+kimi_default_model="kimi-k2.7-code"
+if [[ -n "${KIMI_CODE_API_KEY:-}" ]]; then
+    kimi_key_var="KIMI_CODE_API_KEY"
+    kimi_default_model="k3"
+fi
+kimi_status=$(check_provider "kimi" "$kimi_key_var" "KIMI_MODEL" "$kimi_default_model")
 gemini_status=$(check_provider "gemini" "GEMINI_API_KEY" "GEMINI_MODEL" "gemini-3.1-pro-preview")
 openai_status=$(check_provider "openai" "OPENAI_API_KEY" "OPENAI_MODEL" "gpt-5.5-pro")
 grok_status=$(check_provider "grok" "GROK_API_KEY" "GROK_MODEL" "grok-4.20-reasoning")
@@ -253,6 +267,7 @@ format_status() {
 
 format_status "$(provider_emoji anthropic)"  "$(provider_color anthropic)"  "Anthropic"  "$anthropic_status"
 format_status "$(provider_emoji deepseek)"   "$(provider_color deepseek)"   "DeepSeek"   "$deepseek_status"
+format_status "$(provider_emoji kimi)"       "$(provider_color kimi)"       "Kimi (Moonshot)" "$kimi_status"
 format_status "$(provider_emoji gemini)"     "$(provider_color gemini)"     "Gemini"     "$gemini_status"
 format_status "$(provider_emoji openai)"     "$(provider_color openai)"     "OpenAI"     "$openai_status"
 format_status "$(provider_emoji grok)"       "$(provider_color grok)"       "Grok"       "$grok_status"
@@ -273,6 +288,7 @@ echo ""
 available=0
 [[ "$anthropic_status" == ok:* ]] && available=$((available + 1))
 [[ "$deepseek_status" == ok:* ]] && available=$((available + 1))
+[[ "$kimi_status" == ok:* ]] && available=$((available + 1))
 [[ "$gemini_status" == ok:* ]] && available=$((available + 1))
 [[ "$openai_status" == ok:* ]] && available=$((available + 1))
 [[ "$grok_status" == ok:* ]] && available=$((available + 1))
@@ -287,5 +303,5 @@ available=0
 [[ "$codex_status" == ok:* ]] && available=$((available + 1))
 [[ "$gemini_cli_status" == ok:* ]] && available=$((available + 1))
 
-echo -e "${DIM}${available}/15 providers available${RESET}"
+echo -e "${DIM}${available}/16 providers available${RESET}"
 echo ""

@@ -34,6 +34,7 @@ discover_providers() {
                 ;;
             anthropic)  [[ -n "${ANTHROPIC_API_KEY:-}" ]] && is_available=true ;;
             deepseek)   [[ -n "${DEEPSEEK_API_KEY:-}" ]] && is_available=true ;;
+            kimi)       [[ -n "${MOONSHOT_API_KEY:-${KIMI_CODE_API_KEY:-}}" ]] && is_available=true ;;
             gemini)     [[ -n "${GEMINI_API_KEY:-}" ]] && is_available=true ;;
             openai)     [[ -n "${OPENAI_API_KEY:-}" ]] && is_available=true ;;
             grok)       [[ -n "${GROK_API_KEY:-}" ]] && is_available=true ;;
@@ -364,6 +365,15 @@ get_model() {
     case "$1" in
         anthropic)  echo "${ANTHROPIC_MODEL:-claude-3-7-sonnet-20250219}" ;;
         deepseek)   echo "${DEEPSEEK_MODEL:-deepseek-chat}" ;;
+        kimi)
+            if [[ -n "${KIMI_MODEL:-}" ]]; then
+                echo "$KIMI_MODEL"
+            elif [[ -n "${KIMI_CODE_API_KEY:-}" ]]; then
+                echo "k3"
+            else
+                echo "kimi-k2.7-code"
+            fi
+            ;;
         gemini)     echo "${GEMINI_MODEL:-gemini-3.1-pro-preview}" ;;
         openai)     echo "${OPENAI_MODEL:-gpt-5.5-pro}" ;;
         grok)       echo "${GROK_MODEL:-grok-4.20-reasoning}" ;;
@@ -389,6 +399,7 @@ provider_color() {
     case "$1" in
         anthropic)         echo -e "${MAGENTA}" ;;
         deepseek)          echo -e "${YELLOW}" ;;
+        kimi)              echo -e "${CYAN}" ;;
         gemini|gemini-cli) echo -e "${BLUE}" ;;
         openai|codex)      echo -e "${WHITE}" ;;
         grok)              echo -e "${RED}" ;;
@@ -407,6 +418,7 @@ provider_emoji() {
         ollama)        echo "[O]"; return ;;
         ollama-gemma4) echo "[G]"; return ;;
         ollama-kimi)   echo "[K]"; return ;;
+        kimi)          echo "[K]"; return ;;
         ollama-ornith) echo "[N]"; return ;;
     esac
 

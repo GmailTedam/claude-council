@@ -316,6 +316,8 @@ export PERPLEXITY_API_KEY="your-key"
 export NVIDIA_API_KEY="your-key"       # NVIDIA_BUILD_API_KEY also accepted
 export ANTHROPIC_API_KEY="your-key"
 export DEEPSEEK_API_KEY="your-key"
+export KIMI_CODE_API_KEY="your-key" # Kimi Code managed API; preferred when set
+# Or: export MOONSHOT_API_KEY="your-key" for Moonshot Open Platform
 ```
 
 Or create `.claude/claude-council.local.md` in your project:
@@ -336,6 +338,8 @@ providers:
   anthropic:
     api_key: "your-key"
   deepseek:
+    api_key: "your-key"
+  kimi:
     api_key: "your-key"
 ---
 ```
@@ -360,6 +364,13 @@ direct Ollama Cloud at `https://ollama.com` (cloud-first: the large dedicated
 members do not fit on a typical workstation, so they always use cloud until
 local resources suffice). `ollama-ornith` is local-first when the pulled
 `ornith` tag is available, then falls back to Ollama Cloud.
+
+Direct Moonshot Kimi is a separate `kimi` member. `KIMI_CODE_API_KEY` selects
+the managed coding endpoint (`https://api.kimi.com/coding/v1`) and defaults to
+K3. `MOONSHOT_API_KEY` selects the Open Platform endpoint
+(`https://api.moonshot.ai/v1`) and defaults to `kimi-k2.7-code`. Override either
+with `KIMI_MODEL` and `KIMI_BASE_URL`. When both keys exist, the managed coding
+key is preferred.
 
 A medical model, **MedGemma**, is available as an opt-in member via an
 OpenAI-compatible cloud endpoint (self-hosted vLLM/TGI, Hugging Face Inference
@@ -437,6 +448,7 @@ export NVIDIA_MODEL="nvidia/llama-3.3-nemotron-super-49b-v1.5" # default
 export OLLAMA_MODEL="glm-5.2"                    # default on https://ollama.com
 export ANTHROPIC_MODEL="claude-3-7-sonnet-20250219" # default
 export DEEPSEEK_MODEL="deepseek-chat"               # default
+export KIMI_MODEL="k3"                              # Kimi Code managed default
 ```
 
 Good Ollama/AirLLM-backed council models:
