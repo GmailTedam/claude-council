@@ -366,12 +366,14 @@ get_model() {
         anthropic)  echo "${ANTHROPIC_MODEL:-claude-3-7-sonnet-20250219}" ;;
         deepseek)   echo "${DEEPSEEK_MODEL:-deepseek-chat}" ;;
         kimi)
+            # Kimi K3 on both routes: `k3` on api.kimi.com/coding, `kimi-k3` on
+            # the Moonshot API. Must stay in sync with providers/kimi.sh.
             if [[ -n "${KIMI_MODEL:-}" ]]; then
                 echo "$KIMI_MODEL"
             elif [[ -n "${KIMI_CODE_API_KEY:-}" ]]; then
                 echo "k3"
             else
-                echo "kimi-k2.7-code"
+                echo "kimi-k3"
             fi
             ;;
         gemini)     echo "${GEMINI_MODEL:-gemini-3.1-pro-preview}" ;;
