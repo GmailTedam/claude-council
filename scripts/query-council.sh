@@ -6,6 +6,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROVIDERS_DIR="${SCRIPT_DIR}/providers"
+# Hard wall-clock cap (seconds) per provider invocation. A slow, hung, or
+# rate-limited provider is cancelled at this bound so the rest of the council
+# still returns instead of the whole batch being discarded by the caller.
+COUNCIL_JOB_TIMEOUT="${COUNCIL_JOB_TIMEOUT:-150}"
 
 # Source libraries
 source "${SCRIPT_DIR}/lib/cache.sh"
@@ -315,7 +319,7 @@ query_provider() {
     fi
 
     # Query provider with role-injected prompt
-    if response=$("$script" "$final_prompt" 2>&1); then
+    if response=$(timeout -k 5 "$COUNCIL_JOB_TIMEOUT" "$script" "$final_prompt" 2>&1); then
         local elapsed=$(( $(now_ms) - start_ms ))
         printf '%s' "$response" | jq -Rs --arg role "$role" \
             '{status: "success", response: ., cached: false, role: (if $role == "" then null else $role end)}' > "$output_file"
@@ -509,7 +513,7 @@ if [[ "$DEBATE_MODE" == true ]]; then
 
             if [[ ! -x "$script" ]]; then
                 echo '{"status": "error", "error": "Script not found"}' > "$output_file"
-            elif response=$("$script" "$debate_prompt" 2>&1); then
+            elif response=$(timeout -k 5 "$COUNCIL_JOB_TIMEOUT" "$script" "$debate_prompt" 2>&1); then
                 printf '%s' "$response" | jq -Rs '{status: "success", response: .}' > "$output_file"
             else
                 printf '%s' "$response" | jq -Rs '{status: "error", error: .}' > "$output_file"
