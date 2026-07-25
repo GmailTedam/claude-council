@@ -3,9 +3,9 @@
 # ABOUTME: Source this file and use curl_with_retry instead of curl
 
 # Configuration via environment variables
-COUNCIL_MAX_RETRIES="${COUNCIL_MAX_RETRIES:-3}"
+COUNCIL_MAX_RETRIES="${COUNCIL_MAX_RETRIES:-2}"
 COUNCIL_RETRY_DELAY="${COUNCIL_RETRY_DELAY:-1}"
-COUNCIL_TIMEOUT="${COUNCIL_TIMEOUT:-300}"  # seconds per request (reasoning models need more time)
+COUNCIL_TIMEOUT="${COUNCIL_TIMEOUT:-120}"  # seconds per request (bounded so 429 backoff fails fast; COUNCIL_JOB_TIMEOUT is the hard cap)
 
 # HTTP status codes that should trigger a retry
 is_retryable_status() {
