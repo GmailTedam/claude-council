@@ -112,7 +112,7 @@ format_output() {
 
     # Get providers list from round1
     local providers
-    providers=$(echo "$json" | jq -r '.round1 | keys[]')
+    providers=$(echo "$json" | jq -r '.round1 | keys[]' | sed 's/[[:cntrl:]]//g')  # strip jq CR line-endings so names match .round1 keys
 
     # If quiet mode, skip individual responses
     if [[ "$quiet" != "true" ]]; then
